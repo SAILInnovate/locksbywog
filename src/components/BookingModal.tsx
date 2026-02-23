@@ -132,13 +132,21 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     }
 
     try {
+      const successParams = new URLSearchParams({
+        booking_success: 'true',
+        service: selectedServiceDetails.name,
+        date: formData.date,
+        time: formData.time,
+        total_price: estimatedPrice.toString()
+      }).toString();
+
       const { data: functionData, error: functionError } = await supabase.functions.invoke('stripe-checkout', {
         body: {
           booking_id: bookingId,
           name: formData.name,
           email: formData.email,
           service_name: selectedServiceDetails.name,
-          return_url: window.location.origin
+          return_url: `${window.location.origin}?${successParams}`
         }
       });
 
@@ -419,17 +427,33 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
             <div>
               <p className="text-lg font-semibold">Your booking has been confirmed!</p>
               <p className="text-sm text-gray-600 mt-2">
-                We've sent a confirmation to your phone. See you soon!
+                We've sent a confirmation to your email. See you soon!
               </p>
             </div>
 
             <div className="bg-money-green/10 p-4 rounded-md text-left">
               <p className="font-display font-bold uppercase mb-2">Booking Details</p>
               <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Service:</span> {formData.service}</p>
-                <p><span className="font-semibold">Date:</span> {formData.date}</p>
-                <p><span className="font-semibold">Time:</span> {formData.time}</p>
+                <p><span className="font-semibold">Service:</span> {new URLSearchParams(window.location.search).get('service') || formData.service}</p>
+                <p><span className="font-semibold">Date:</span> {new URLSearchParams(window.location.search).get('date') || formData.date}</p>
+                <p><span className="font-semibold">Time:</span> {new URLSearchParams(window.location.search).get('time') || formData.time}</p>
                 <p><span className="font-semibold">Location:</span> Salford, Manchester</p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-acid-lime/30 text-sm">
+                {(() => {
+                  const priceParam = new URLSearchParams(window.location.search).get('total_price');
+                  // Use param if we just reloaded, otherwise use the estimatedPrice we calculated
+                  const total = priceParam ? parseFloat(priceParam) : estimatedPrice;
+                  if (total > 0) {
+                    return (
+                      <p className="font-bold text-money-green">
+                        To pay in cash on the day: £{total - 10} <span className="font-normal text-gray-600">(£10 deposit already paid)</span>
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
 

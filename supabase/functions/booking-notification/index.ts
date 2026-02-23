@@ -114,14 +114,61 @@ serve(async (req) => {
       </div>
     `;
 
-    const data = await resend.emails.send({
-      from: "LocksByWog System <bookings@blocq.co.uk>", // User verified Resend domain
+    const wogData = await resend.emails.send({
+      from: "LocksByWog Bookings <bookings@blocq.co.uk>",
       to: ["lovelymorales2110@gmail.com"],
       subject: `New Booking! ${booking.name} - ${dateFormatted} at ${timeFormatted}`,
       html: emailHtml,
     });
 
-    return new Response(JSON.stringify({ success: true, data }), {
+    // --- SEND EMAIL TO CUSTOMER ---
+    const remainingBalance = booking.total_price - booking.deposit_amount;
+
+    const customerEmailHtml = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
+        
+        <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Your booking is confirmed! &nbsp;🎉</h2>
+        
+        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+          Hey ${booking.name},<br/><br/>
+          Your £10 deposit has been successfully paid, and your slot is officially locked in.
+        </p>
+
+        <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin-top:0; margin-bottom: 15px;">Your Booking Details:</h3>
+          <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; line-height: 1.8;">
+            <li><strong>Date:</strong> ${dateFormatted}</li>
+            <li><strong>Time:</strong> ${timeFormatted}</li>
+            <li><strong>Location:</strong> Salford, Manchester</li>
+          </ul>
+        </div>
+        
+        <div style="background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+          <p style="margin: 0; font-size: 16px; color: #2e7d32;">
+            <strong>Payment Due on the Day:</strong><br/>
+            Please bring <strong>£${remainingBalance > 0 ? remainingBalance.toFixed(2) : "0.00"} in cash</strong> to pay the remaining balance of your service.
+          </p>
+        </div>
+
+        <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
+          I'll be in touch with you directly on Instagram (@${cleanIG}) or via text to confirm the exact address before your appointment.
+        </p>
+        
+        <p style="font-size: 15px; font-weight: bold;">
+          See you soon,<br/>
+          Locks By Wog
+        </p>
+      </div>
+    `;
+
+    const customerData = await resend.emails.send({
+      from: "LocksByWog <bookings@blocq.co.uk>",
+      to: [booking.email],
+      subject: `Booking Confirmed - Locks By Wog`,
+      html: customerEmailHtml,
+    });
+
+    return new Response(JSON.stringify({ success: true, wogData, customerData }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
