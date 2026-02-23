@@ -8,10 +8,6 @@ import { Navigation } from '@/components/Navigation';
 import { BookingModal } from '@/components/BookingModal';
 
 // Sections
-import { HeroSection } from '@/sections/HeroSection';
-import { StatementSection } from '@/sections/StatementSection';
-import { AboutSection } from '@/sections/AboutSection';
-import { ServicesSection } from '@/sections/ServicesSection';
 import { PortfolioSection } from '@/sections/PortfolioSection';
 import { ServicesListSection } from '@/sections/ServicesListSection';
 import { TestimonialsSection } from '@/sections/TestimonialsSection';
@@ -118,11 +114,7 @@ function App() {
 
       {/* Main Content */}
       <main ref={mainRef} className="relative">
-        <HeroSection onBookClick={() => handleBookClick()} />
-        <StatementSection />
-        <AboutSection />
-        <ServicesSection onBookClick={() => handleBookClick()} />
-        <PortfolioSection />
+        <PortfolioSection onBookClick={() => handleBookClick()} />
         <ServicesListSection onBookClick={handleBookClick} />
         <TestimonialsSection />
         <ContactSection />

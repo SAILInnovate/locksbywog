@@ -1,8 +1,13 @@
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { StarIcon } from '@/components/Icons';
+import { Button } from '@/components/ui/button';
 
-export function PortfolioSection() {
+interface PortfolioSectionProps {
+  onBookClick: () => void;
+}
+
+export function PortfolioSection({ onBookClick }: PortfolioSectionProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' }, [
     Autoplay({ delay: 3000, stopOnInteraction: true }),
   ]);
@@ -18,19 +23,19 @@ export function PortfolioSection() {
   ];
 
   return (
-    <section id="portfolio" className="bg-money-green z-50 relative w-full overflow-hidden py-16 md:py-24">
-      <div className="container mx-auto px-6 mb-8 flex flex-col md:flex-row items-end justify-between">
-        <div className="relative z-30 flex-1 max-w-2xl">
+    <section id="portfolio" className="bg-money-green z-50 relative w-full overflow-hidden pt-32 pb-16 md:pt-40 md:pb-24">
+      <div className="container mx-auto px-6 mb-8 flex flex-col items-center text-center">
+        <div className="relative z-30 flex-1 max-w-3xl">
           <h2 className="heading-lg text-off-white text-4xl md:text-5xl lg:text-7xl uppercase">
             Looks For Every Mood
           </h2>
-          <p className="body-text text-off-white/80 mt-4 md:mt-4 text-lg">
+          <p className="body-text text-off-white/80 mt-4 md:mt-6 text-lg">
             Protective styles that last. Scroll through the latest work.
           </p>
         </div>
 
         <StarIcon
-          className="text-acid-lime hidden md:block w-12 h-12 mt-4 md:mt-0 animate-[spin_10s_linear_infinite]"
+          className="text-acid-lime hidden md:block w-16 h-16 mt-8 animate-[spin_10s_linear_infinite] absolute right-8 top-8 opacity-50"
         />
       </div>
 
@@ -67,6 +72,16 @@ export function PortfolioSection() {
         >
           →
         </button>
+      </div>
+
+      <div className="relative z-30 container mx-auto px-6 mt-12 flex justify-center">
+        <Button
+          onClick={onBookClick}
+          size="lg"
+          className="bg-acid-lime text-near-black font-display font-black uppercase tracking-wider text-xl px-12 py-8 rounded-full hover:bg-off-white transition-colors hover:scale-105 active:scale-95 duration-200"
+        >
+          Book Your Look Now
+        </Button>
       </div>
     </section>
   );
