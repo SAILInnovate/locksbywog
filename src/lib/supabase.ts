@@ -10,17 +10,21 @@ export const supabase = supabaseUrl && supabaseKey
 
 export interface Booking {
   id?: string;
+  service_id: string;
   name: string;
-  instagram: string;
+  email: string;
   phone: string;
-  service: string;
-  date: string;
-  time: string;
-  deposit_paid: boolean;
-  deposit_amount: number;
+  instagram: string;
   notes?: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  start_datetime: string;
+  end_datetime: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  total_price: number;
+  deposit_amount: number;
+  deposit_paid: boolean;
   created_at?: string;
+  stripe_session_id?: string;
+  stripe_payment_intent?: string;
 }
 
 export interface Service {
@@ -29,6 +33,7 @@ export interface Service {
   description: string;
   price_from: number;
   duration: string;
+  duration_minutes: number;
   image?: string;
 }
 
@@ -40,6 +45,7 @@ const FALLBACK_SERVICES: Service[] = [
     description: 'Lightweight, natural-looking, scalp-friendly braids that last for weeks.',
     price_from: 45,
     duration: '3-5 hours',
+    duration_minutes: 240,
   },
   {
     id: '2',
@@ -47,6 +53,7 @@ const FALLBACK_SERVICES: Service[] = [
     description: 'Neat parts, clean finish, healthy edges. Keep your locs looking fresh.',
     price_from: 35,
     duration: '2-4 hours',
+    duration_minutes: 180,
   },
   {
     id: '3',
@@ -54,6 +61,7 @@ const FALLBACK_SERVICES: Service[] = [
     description: 'Quick, gentle, long-lasting styles for the little ones.',
     price_from: 25,
     duration: '1-3 hours',
+    duration_minutes: 120,
   },
   {
     id: '4',
@@ -61,6 +69,7 @@ const FALLBACK_SERVICES: Service[] = [
     description: 'Classic protective style with clean parts and professional finish.',
     price_from: 50,
     duration: '4-6 hours',
+    duration_minutes: 300,
   },
   {
     id: '5',
@@ -68,6 +77,7 @@ const FALLBACK_SERVICES: Service[] = [
     description: 'Sleek, stylish cornrows for any occasion.',
     price_from: 30,
     duration: '1-2 hours',
+    duration_minutes: 90,
   },
 ];
 
@@ -94,6 +104,7 @@ export async function getServices(): Promise<Service[]> {
       description: s.description,
       price_from: Number(s.base_price),
       duration: `${s.duration_minutes / 60} hours`,
+      duration_minutes: Number(s.duration_minutes),
     }));
   } catch (err) {
     console.error('Failed to fetch services:', err);

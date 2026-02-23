@@ -31,6 +31,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const [services, setServices] = useState<Service[]>([]);
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     instagram: '',
     phone: '',
     service: preselectedService || '',
@@ -58,7 +59,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.instagram || !formData.phone || !formData.service || !formData.date || !formData.time) {
+    if (!formData.name || !formData.email || !formData.instagram || !formData.phone || !formData.service || !formData.date || !formData.time) {
       return;
     }
     setStep('deposit');
@@ -70,16 +71,35 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 1500));
 
+    const selectedServiceDetails = services.find(s => s.name === formData.service);
+    if (!selectedServiceDetails) {
+      alert('Selected service not found.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const startDateTime = new Date(`${formData.date}T${formData.time}:00`);
+    const endDateTime = new Date(startDateTime.getTime() + selectedServiceDetails.duration_minutes * 60000);
+
+    const isLateNightTime = (time: string) => {
+      const hour = parseInt(time.split(':')[0], 10);
+      return hour >= 22 || hour < 5;
+    };
+    const isLate = isLateNightTime(formData.time);
+    const estimatedPrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
+
     // Create booking
     const { error } = await createBooking({
+      service_id: selectedServiceDetails.id,
       name: formData.name,
+      email: formData.email,
       instagram: formData.instagram,
       phone: formData.phone,
-      service: formData.service,
-      date: formData.date,
-      time: formData.time,
+      start_datetime: startDateTime.toISOString(),
+      end_datetime: endDateTime.toISOString(),
       deposit_paid: true,
       deposit_amount: 10,
+      total_price: estimatedPrice,
       notes: formData.notes,
       status: 'pending',
     });
@@ -97,6 +117,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     setStep('form');
     setFormData({
       name: '',
+      email: '',
       instagram: '',
       phone: '',
       service: preselectedService || '',
@@ -153,6 +174,21 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="border-2 border-near-black mt-1"
                 placeholder="Enter your full name"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="font-display font-bold uppercase text-sm">
+                Email Address *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="border-2 border-near-black mt-1"
+                placeholder="you@email.com"
                 required
               />
             </div>
