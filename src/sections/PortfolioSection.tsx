@@ -15,7 +15,7 @@ export function PortfolioSection({ onBookClick }: PortfolioSectionProps) {
   const images = [
     "/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg",
     "/images/8D00B2A9-ECC2-486F-A168-F1A03A587A76_1_102_o.jpeg",
-    "/images/C89B76A9-EF3F-446C-9C48-656D6E35529C_1_102_o.jpeg",
+    "/images/IMG_1319.JPG",
     "/images/D41E79E1-2CB9-4DCF-95FC-C84481C152D4_4_5005_c.jpeg",
     "/images/F0100147-6D85-46E0-869E-030A0181C118.jpeg",
     "/images/IMG_6897.jpeg",
