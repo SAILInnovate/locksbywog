@@ -23,14 +23,12 @@ serve(async (req) => {
         }
 
         // Prepare the actual date formatting - fallback to start_datetime if available, otherwise use date/time fields directly
-        let dateStr = booking.date || booking.start_datetime;
-        let timeStr = booking.time;
-        let dateFormatted = dateStr;
-        let timeFormatted = timeStr;
+        let dateFormatted = "Unknown Date";
+        let timeFormatted = "Unknown Time";
 
-        if (dateStr) {
+        if (booking.start_datetime) {
             try {
-                const d = new Date(dateStr);
+                const d = new Date(booking.start_datetime);
                 if (!isNaN(d.getTime())) {
                     dateFormatted = d.toLocaleDateString('en-GB', {
                         weekday: 'long',
@@ -38,25 +36,20 @@ serve(async (req) => {
                         month: 'short',
                         year: 'numeric'
                     });
+                    timeFormatted = d.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                 }
             } catch (e) { }
         }
 
-        if (booking.start_datetime && !timeStr) {
-            try {
-                timeFormatted = new Date(booking.start_datetime).toLocaleTimeString('en-GB', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch (e) { }
-        }
-
         // Make the IG link clean - remove @ if they added it
-        const cleanIG = booking.instagram.replace('@', '');
+        const cleanIG = (booking.instagram || "").replace('@', '');
         const igLink = `https://instagram.com/${cleanIG}`;
 
         // Make the phone link clean for tel:
-        const cleanPhone = booking.phone.replace(/[^0-9+]/g, '');
+        const cleanPhone = (booking.phone || "").replace(/[^0-9+]/g, '');
 
         const emailHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
@@ -104,7 +97,7 @@ serve(async (req) => {
     `;
 
         const data = await resend.emails.send({
-            from: "LocksByWog System <bookings@your-verified-domain.com>", // Replace with your verified Resend domain
+            from: "LocksByWog System <bookings@blocq.co.uk>", // User verified Resend domain
             to: ["lovelymorales2110@gmail.com"],
             subject: `New Booking! ${booking.name} - ${dateFormatted} at ${timeFormatted}`,
             html: emailHtml,
