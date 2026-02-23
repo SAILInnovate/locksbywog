@@ -24,83 +24,54 @@ export function PortfolioSection() {
     if (!section || !image1 || !image2 || !image3 || !headline || !star) return;
 
     const ctx = gsap.context(() => {
-      const scrollTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: '+=130%',
-          pin: true,
-          scrub: 0.6,
-        },
+      const mm = gsap.matchMedia();
+
+      mm.add('(min-width: 768px)', () => {
+        const scrollTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: '+=130%',
+            pin: true,
+            scrub: 0.6,
+          },
+        });
+
+        // ENTRANCE (0% - 30%)
+        scrollTl
+          .fromTo(image1, { x: '-30vw', opacity: 0 }, { x: 0, opacity: 1, ease: 'none' }, 0)
+          .fromTo(image2, { y: '-30vh', opacity: 0 }, { y: 0, opacity: 1, ease: 'none' }, 0.05)
+          .fromTo(image3, { x: '30vw', opacity: 0 }, { x: 0, opacity: 1, ease: 'none' }, 0.1)
+          .fromTo(headline, { y: '25vh', opacity: 0 }, { y: 0, opacity: 1, ease: 'none' }, 0.1)
+          .fromTo(star, { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, ease: 'back.out(1.5)' }, 0.2);
+
+        // EXIT (70% - 100%)
+        scrollTl
+          .fromTo(image1, { x: 0, opacity: 1 }, { x: '-12vw', opacity: 0, ease: 'power2.in' }, 0.7)
+          .fromTo(image2, { y: 0, opacity: 1 }, { y: '-10vh', opacity: 0, ease: 'power2.in' }, 0.72)
+          .fromTo(image3, { x: 0, opacity: 1 }, { x: '12vw', opacity: 0, ease: 'power2.in' }, 0.74)
+          .fromTo(headline, { y: 0, opacity: 1 }, { y: '12vh', opacity: 0, ease: 'power2.in' }, 0.7)
+          .fromTo(star, { opacity: 1 }, { opacity: 0, ease: 'power2.in' }, 0.75);
       });
 
-      // ENTRANCE (0% - 30%)
-      scrollTl
-        .fromTo(
-          image1,
-          { x: '-30vw', opacity: 0 },
-          { x: 0, opacity: 1, ease: 'none' },
-          0
-        )
-        .fromTo(
-          image2,
-          { y: '-30vh', opacity: 0 },
-          { y: 0, opacity: 1, ease: 'none' },
-          0.05
-        )
-        .fromTo(
-          image3,
-          { x: '30vw', opacity: 0 },
-          { x: 0, opacity: 1, ease: 'none' },
-          0.1
-        )
-        .fromTo(
-          headline,
-          { y: '25vh', opacity: 0 },
-          { y: 0, opacity: 1, ease: 'none' },
-          0.1
-        )
-        .fromTo(
-          star,
-          { scale: 0.3, opacity: 0 },
-          { scale: 1, opacity: 1, ease: 'back.out(1.5)' },
-          0.2
+      mm.add('(max-width: 767px)', () => {
+        gsap.fromTo(
+          [headline, image1, image2, image3],
+          { y: 20, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 80%',
+              toggleActions: 'play none none reverse',
+            },
+          }
         );
-
-      // SETTLE (30% - 70%): Hold position
-
-      // EXIT (70% - 100%)
-      scrollTl
-        .fromTo(
-          image1,
-          { x: 0, opacity: 1 },
-          { x: '-12vw', opacity: 0, ease: 'power2.in' },
-          0.7
-        )
-        .fromTo(
-          image2,
-          { y: 0, opacity: 1 },
-          { y: '-10vh', opacity: 0, ease: 'power2.in' },
-          0.72
-        )
-        .fromTo(
-          image3,
-          { x: 0, opacity: 1 },
-          { x: '12vw', opacity: 0, ease: 'power2.in' },
-          0.74
-        )
-        .fromTo(
-          headline,
-          { y: 0, opacity: 1 },
-          { y: '12vh', opacity: 0, ease: 'power2.in' },
-          0.7
-        )
-        .fromTo(
-          star,
-          { opacity: 1 },
-          { opacity: 0, ease: 'power2.in' },
-          0.75
-        );
+      });
     }, section);
 
     return () => ctx.revert();
@@ -110,76 +81,71 @@ export function PortfolioSection() {
     <section
       ref={sectionRef}
       id="portfolio"
-      className="section-pinned bg-money-green z-50"
+      className="bg-money-green z-50 relative w-full overflow-hidden flex flex-col justify-center py-20 px-6 md:block md:section-pinned"
     >
-      {/* Top Row Images */}
-      <div
-        ref={image1Ref}
-        className="absolute z-20 left-4 top-[10vh] md:left-[6vw] md:top-[14vh] w-[42vw] md:w-[28vw] max-w-[320px]"
-      >
-        <div className="image-frame overflow-hidden">
-          <img
-            src="/images/D41E79E1-2CB9-4DCF-95FC-C84481C152D4_4_5005_c.jpeg"
-            alt="Locs in progress"
-            className="w-full h-auto object-cover"
-            style={{ aspectRatio: '4/5' }}
-          />
-        </div>
-      </div>
-
-      <div
-        ref={image2Ref}
-        className="absolute z-30 md:z-20 left-1/2 -translate-x-1/2 top-[24vh] md:translate-x-0 md:left-[36vw] md:top-[14vh] w-[46vw] md:w-[28vw] max-w-[320px]"
-      >
-        <div className="image-frame overflow-hidden">
-          <img
-            src="/images/IMG_6897.jpeg"
-            alt="Styled locs"
-            className="w-full h-auto object-cover"
-            style={{ aspectRatio: '4/5' }}
-          />
-        </div>
-      </div>
-
-      <div
-        ref={image3Ref}
-        className="absolute z-20 right-4 top-[38vh] md:right-auto md:left-[66vw] md:top-[14vh] w-[42vw] md:w-[28vw] max-w-[320px]"
-      >
-        <div className="image-frame overflow-hidden">
-          <img
-            src="/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg"
-            alt="Braids style"
-            className="w-full h-auto object-cover"
-            style={{ aspectRatio: '4/5' }}
-          />
-        </div>
-      </div>
-
       {/* Bottom Headline */}
       <div
         ref={headlineRef}
-        className="absolute z-30"
-        style={{
-          left: '6vw',
-          top: '62vh',
-          width: '62vw',
-        }}
+        className="relative z-30 mb-10 mx-auto text-center md:text-left md:absolute md:left-[6vw] md:top-[62vh] md:w-[62vw]"
       >
-        <h2 className="heading-lg text-off-white">
+        <h2 className="heading-lg text-off-white text-4xl md:text-5xl lg:text-7xl">
           LOOKS FOR EVERY MOOD
         </h2>
-        <p className="body-text text-off-white/80 mt-4">
+        <p className="body-text text-off-white/80 mt-4 md:mt-4">
           Protective styles that last.
         </p>
+      </div>
+
+      {/* Top Row Images */}
+      <div className="relative z-20 w-full grid grid-cols-2 gap-4 md:block">
+        <div
+          ref={image1Ref}
+          className="col-span-2 relative md:absolute md:left-[6vw] md:top-[14vh] w-full md:w-[28vw] max-w-[320px] mx-auto"
+        >
+          <div className="image-frame overflow-hidden">
+            <img
+              src="/images/D41E79E1-2CB9-4DCF-95FC-C84481C152D4_4_5005_c.jpeg"
+              alt="Locs in progress"
+              className="w-full h-auto object-cover opacity-90"
+              style={{ aspectRatio: '4/5' }}
+            />
+          </div>
+        </div>
+
+        <div
+          ref={image2Ref}
+          className="relative md:absolute md:left-[36vw] md:top-[14vh] w-full md:w-[28vw] max-w-[320px] mx-auto mt-4 md:mt-0"
+        >
+          <div className="image-frame overflow-hidden">
+            <img
+              src="/images/IMG_6897.jpeg"
+              alt="Styled locs"
+              className="w-full h-auto object-cover opacity-90"
+              style={{ aspectRatio: '4/5' }}
+            />
+          </div>
+        </div>
+
+        <div
+          ref={image3Ref}
+          className="relative md:absolute md:left-[66vw] md:top-[14vh] w-full md:w-[28vw] max-w-[320px] mx-auto mt-4 md:mt-0"
+        >
+          <div className="image-frame overflow-hidden">
+            <img
+              src="/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg"
+              alt="Braids style"
+              className="w-full h-auto object-cover opacity-90"
+              style={{ aspectRatio: '4/5' }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Star Icon */}
       <StarIcon
         ref={starRef}
-        className="absolute text-acid-lime z-40"
+        className="absolute text-acid-lime z-40 hidden md:block md:left-[88vw] md:top-[70vh]"
         style={{
-          left: '88vw',
-          top: '70vh',
           width: 'clamp(28px, 4vw, 48px)',
           height: 'clamp(28px, 4vw, 48px)',
         }}

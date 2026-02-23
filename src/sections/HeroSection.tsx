@@ -28,89 +28,50 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
     if (!section || !heroImage || !logoSticker || !ctaSticker || !star || !sparkle) return;
 
     const ctx = gsap.context(() => {
-      // Auto-play entrance animation on load
-      const loadTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+      const mm = gsap.matchMedia();
 
-      loadTl
-        .fromTo(
-          heroImage,
-          { scale: 0.92, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.6 }
-        )
-        .fromTo(
-          logoSticker,
-          { x: '-12vw', rotate: -12, opacity: 0 },
-          { x: 0, rotate: -4, opacity: 1, duration: 0.55 },
-          '-=0.4'
-        )
-        .fromTo(
-          ctaSticker,
-          { x: '12vw', rotate: 12, opacity: 0 },
-          { x: 0, rotate: 4, opacity: 1, duration: 0.55 },
-          '-=0.5'
-        )
-        .fromTo(
-          [star, sparkle],
-          { scale: 0.6, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.8)', stagger: 0.1 },
-          '-=0.3'
-        );
+      mm.add('(min-width: 768px)', () => {
+        // Auto-play entrance animation on load
+        const loadTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
 
-      // Scroll-driven exit animation
-      const scrollTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: '+=130%',
-          pin: true,
-          scrub: 0.6,
-          onLeaveBack: () => {
-            // Reset all elements when scrolling back to top
-            gsap.set([heroImage, logoSticker, ctaSticker, star, sparkle], {
-              opacity: 1,
-              x: 0,
-              y: 0,
-              scale: 1,
-            });
-            gsap.set(logoSticker, { rotate: -4 });
-            gsap.set(ctaSticker, { rotate: 4 });
+        loadTl
+          .fromTo(heroImage, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6 })
+          .fromTo(logoSticker, { x: '-12vw', rotate: -12, opacity: 0 }, { x: 0, rotate: -4, opacity: 1, duration: 0.55 }, '-=0.4')
+          .fromTo(ctaSticker, { x: '12vw', rotate: 12, opacity: 0 }, { x: 0, rotate: 4, opacity: 1, duration: 0.55 }, '-=0.5')
+          .fromTo([star, sparkle], { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.8)', stagger: 0.1 }, '-=0.3');
+
+        // Scroll-driven exit animation
+        const scrollTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: '+=130%',
+            pin: true,
+            scrub: 0.6,
+            onLeaveBack: () => {
+              gsap.set([heroImage, logoSticker, ctaSticker, star, sparkle], { opacity: 1, x: 0, y: 0, scale: 1 });
+              gsap.set(logoSticker, { rotate: -4 });
+              gsap.set(ctaSticker, { rotate: 4 });
+            },
           },
-        },
+        });
+
+        // EXIT phase (70% - 100%)
+        scrollTl
+          .fromTo(heroImage, { y: 0, scale: 1, opacity: 1 }, { y: '-10vh', scale: 0.92, opacity: 0, ease: 'power2.in' }, 0.7)
+          .fromTo(logoSticker, { x: 0, rotate: -4, opacity: 1 }, { x: '-10vw', rotate: -14, opacity: 0, ease: 'power2.in' }, 0.7)
+          .fromTo(ctaSticker, { x: 0, rotate: 4, opacity: 1 }, { x: '10vw', rotate: 14, opacity: 0, ease: 'power2.in' }, 0.7)
+          .fromTo(star, { x: 0, opacity: 1 }, { x: '8vw', opacity: 0, ease: 'power2.in' }, 0.75)
+          .fromTo(sparkle, { x: 0, opacity: 1 }, { x: '-8vw', opacity: 0, ease: 'power2.in' }, 0.75);
       });
 
-      // SETTLE phase (0% - 70%): Hold position
-      // EXIT phase (70% - 100%): Elements exit
-      scrollTl
-        .fromTo(
-          heroImage,
-          { y: 0, scale: 1, opacity: 1 },
-          { y: '-10vh', scale: 0.92, opacity: 0, ease: 'power2.in' },
-          0.7
-        )
-        .fromTo(
-          logoSticker,
-          { x: 0, rotate: -4, opacity: 1 },
-          { x: '-10vw', rotate: -14, opacity: 0, ease: 'power2.in' },
-          0.7
-        )
-        .fromTo(
-          ctaSticker,
-          { x: 0, rotate: 4, opacity: 1 },
-          { x: '10vw', rotate: 14, opacity: 0, ease: 'power2.in' },
-          0.7
-        )
-        .fromTo(
-          star,
-          { x: 0, opacity: 1 },
-          { x: '8vw', opacity: 0, ease: 'power2.in' },
-          0.75
-        )
-        .fromTo(
-          sparkle,
-          { x: 0, opacity: 1 },
-          { x: '-8vw', opacity: 0, ease: 'power2.in' },
-          0.75
+      mm.add('(max-width: 767px)', () => {
+        gsap.fromTo(
+          [heroImage, ctaSticker, star, sparkle],
+          { y: 20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
         );
+      });
     }, section);
 
     return () => ctx.revert();
@@ -120,12 +81,12 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
     <section
       ref={sectionRef}
       id="hero"
-      className="section-pinned bg-money-green flex items-center justify-center z-10"
+      className="bg-money-green relative w-full overflow-hidden flex flex-col items-center justify-center pt-24 pb-12 px-6 min-h-[90svh] md:min-h-screen md:block md:section-pinned z-10"
     >
       {/* Logo Sticker - Top Left */}
       <div
         ref={logoStickerRef}
-        className="absolute top-24 left-4 md:left-[6vw] md:top-[12vh] z-50 hover:scale-105 transition-transform"
+        className="hidden md:block absolute md:left-[6vw] md:top-[12vh] z-50 hover:scale-105 transition-transform"
         style={{ transform: 'rotate(-4deg)' }}
       >
         <img
@@ -138,9 +99,9 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
       {/* Hero Image - Center */}
       <div
         ref={heroImageRef}
-        className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        className="relative z-30 mx-auto w-full flex justify-center md:block md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
-        <div className="image-frame overflow-hidden bg-off-white w-[85vw] md:w-[50vw] max-w-[500px]">
+        <div className="image-frame overflow-hidden bg-off-white w-[90vw] md:w-[50vw] max-w-[500px]">
           <img
             src="/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg"
             alt="Beautiful braids by LocksByWog"
@@ -153,7 +114,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
       {/* CTA Sticker - Bottom Right */}
       <div
         ref={ctaStickerRef}
-        className="absolute z-50 bottom-[12vh] right-6 md:right-auto md:left-[62vw] md:top-[66vh]"
+        className="relative z-50 mt-8 mx-auto text-center md:absolute md:mt-0 md:bottom-auto md:right-auto md:left-[62vw] md:top-[66vh]"
         style={{ transform: 'rotate(4deg)' }}
       >
         <button onClick={onBookClick} className="sticker-lime text-near-black cursor-pointer hover:scale-105 transition-transform">
@@ -167,7 +128,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
       {/* Star Icon - Top Right */}
       <StarIcon
         ref={starRef}
-        className="absolute text-acid-lime z-40 top-32 right-6 md:left-[82vw] md:top-[12vh] md:right-auto"
+        className="absolute text-acid-lime z-40 top-24 right-4 md:left-[82vw] md:top-[12vh] md:right-auto"
         style={{
           width: 'clamp(32px, 5vw, 56px)',
           height: 'clamp(32px, 5vw, 56px)',
@@ -177,7 +138,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
       {/* Sparkle Icon - Bottom Left */}
       <SparkleIcon
         ref={sparkleRef}
-        className="absolute text-acid-lime z-40 bottom-32 left-6 md:left-[10vw] md:top-[72vh] md:bottom-auto"
+        className="absolute text-acid-lime z-40 bottom-24 left-4 md:left-[10vw] md:top-[72vh] md:bottom-auto"
         style={{
           width: 'clamp(32px, 5vw, 56px)',
           height: 'clamp(32px, 5vw, 56px)',

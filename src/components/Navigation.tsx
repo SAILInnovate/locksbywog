@@ -29,9 +29,9 @@ export function Navigation({ onBookClick }: NavigationProps) {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-            ? 'bg-money-green/95 backdrop-blur-sm py-3'
-            : 'bg-transparent py-6'
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${isScrolled
+          ? 'bg-money-green/95 backdrop-blur-sm py-3 shadow-md'
+          : 'bg-transparent py-6'
           }`}
       >
         <div className="w-full px-6 lg:px-12 flex items-center justify-between">
@@ -93,7 +93,7 @@ export function Navigation({ onBookClick }: NavigationProps) {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-money-green transition-transform duration-300 md:hidden ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed inset-0 z-[90] bg-money-green transition-transform duration-300 md:hidden ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
       >
         <div className="flex flex-col items-center justify-center h-full gap-8">
