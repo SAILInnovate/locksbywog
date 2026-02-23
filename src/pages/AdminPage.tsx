@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Lock, Unlock, AlertTriangle, LogOut, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, Unlock, AlertTriangle, LogOut, ShieldCheck, Phone, Instagram, Clock, User } from 'lucide-react';
 import { getBlockedDates, addBlockedDate, removeBlockedDate, getConfirmedBookingsForDate } from '@/lib/supabase';
 
 const ADMIN_PASSWORD = 'Morales';
@@ -338,19 +338,76 @@ export function AdminPage() {
                                 {/* Bookings on this date */}
                                 {selectedDateBookings.length > 0 && (
                                     <div className="mb-4">
-                                        <p className="text-acid-lime font-bold text-sm uppercase mb-2 flex items-center gap-2">
+                                        <p className="text-acid-lime font-bold text-xs sm:text-sm uppercase mb-3 flex items-center gap-2">
                                             <AlertTriangle size={14} />
                                             {selectedDateBookings.length} confirmed booking{selectedDateBookings.length > 1 ? 's' : ''}
                                         </p>
-                                        <div className="space-y-2">
-                                            {selectedDateBookings.map((b: any) => (
-                                                <div key={b.id} className="bg-off-white/5 rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                                                    <span className="font-medium">{b.name}</span>
-                                                    <span className="text-off-white/60">
-                                                        {formatTime(b.start_datetime)} – {formatTime(b.end_datetime)}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                        <div className="space-y-3">
+                                            {selectedDateBookings.map((b: any) => {
+                                                const cleanIG = (b.instagram || '').replace('@', '');
+                                                const cleanPhone = (b.phone || '').replace(/[^0-9+]/g, '');
+                                                const serviceName = b.services?.name || 'Service';
+
+                                                return (
+                                                    <div key={b.id} className="bg-off-white/[0.07] rounded-xl p-3 sm:p-4 border border-off-white/10">
+                                                        {/* Name + Service */}
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div>
+                                                                <p className="font-bold text-sm sm:text-base flex items-center gap-2">
+                                                                    <User size={14} className="text-acid-lime shrink-0" />
+                                                                    {b.name}
+                                                                </p>
+                                                                <p className="text-off-white/50 text-xs sm:text-sm mt-0.5 ml-[22px]">{serviceName}</p>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <p className="text-off-white/70 text-xs sm:text-sm flex items-center gap-1">
+                                                                    <Clock size={12} className="shrink-0" />
+                                                                    {formatTime(b.start_datetime)} – {formatTime(b.end_datetime)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Notes */}
+                                                        {b.notes && (
+                                                            <p className="text-off-white/40 text-xs italic mb-3 ml-[22px] border-l-2 border-off-white/10 pl-2">
+                                                                {b.notes}
+                                                            </p>
+                                                        )}
+
+                                                        {/* Quick Action Buttons */}
+                                                        <div className="flex gap-2 mt-2">
+                                                            {cleanPhone && (
+                                                                <a
+                                                                    href={`tel:${cleanPhone}`}
+                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-money-green/80 hover:bg-money-green text-off-white text-xs sm:text-sm font-bold py-2.5 rounded-lg transition-colors"
+                                                                >
+                                                                    <Phone size={14} />
+                                                                    Call
+                                                                </a>
+                                                            )}
+                                                            {cleanIG && (
+                                                                <a
+                                                                    href={`https://instagram.com/${cleanIG}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-off-white/10 hover:bg-off-white/20 text-off-white text-xs sm:text-sm font-bold py-2.5 rounded-lg transition-colors"
+                                                                >
+                                                                    <Instagram size={14} />
+                                                                    @{cleanIG}
+                                                                </a>
+                                                            )}
+                                                            {cleanPhone && (
+                                                                <a
+                                                                    href={`sms:${cleanPhone}`}
+                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-off-white/10 hover:bg-off-white/20 text-off-white text-xs sm:text-sm font-bold py-2.5 rounded-lg transition-colors"
+                                                                >
+                                                                    💬 Text
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

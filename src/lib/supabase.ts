@@ -240,7 +240,7 @@ export async function getConfirmedBookingsForDate(dateStr: string) {
 
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, name, start_datetime, end_datetime, status')
+    .select('id, name, phone, instagram, email, notes, start_datetime, end_datetime, status, services(name)')
     .eq('status', 'confirmed')
     .gte('start_datetime', startOfDay)
     .lte('start_datetime', endOfDay);
