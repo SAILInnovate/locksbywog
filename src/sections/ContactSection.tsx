@@ -111,9 +111,9 @@ export function ContactSection() {
           className="mt-16 pt-8 border-t-2 border-near-black/20"
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <p className="text-sm text-near-black/60 text-center md:text-left">
+            <a href="/admin" className="text-sm text-near-black/60 text-center md:text-left hover:text-near-black/60 no-underline cursor-default">
               © {new Date().getFullYear()} LocksByWog. All rights reserved.
-            </p>
+            </a>
             <div className="flex gap-6 justify-center md:justify-start">
               <a
                 href="https://instagram.com/locksbywog"

@@ -214,16 +214,16 @@ export function AdminPage() {
             <div className="bg-money-green border-b-2 border-near-black">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <ShieldCheck size={24} className="text-acid-lime" />
-                        <h1 className="font-display font-black text-xl uppercase tracking-wider">Admin</h1>
+                        <ShieldCheck size={20} className="text-acid-lime" />
+                        <h1 className="font-display font-black text-lg sm:text-xl uppercase tracking-wider">Admin</h1>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <a href="/" className="text-off-white/70 hover:text-off-white text-sm transition-colors">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <a href="/" className="text-off-white/70 hover:text-off-white text-xs sm:text-sm transition-colors">
                             ← Site
                         </a>
                         <button
                             onClick={() => setIsAuthenticated(false)}
-                            className="flex items-center gap-2 text-off-white/70 hover:text-off-white text-sm transition-colors"
+                            className="flex items-center gap-1 sm:gap-2 text-off-white/70 hover:text-off-white text-xs sm:text-sm transition-colors"
                         >
                             <LogOut size={16} />
                             Log out
@@ -232,9 +232,9 @@ export function AdminPage() {
                 </div>
             </div>
 
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
                 {/* Legend */}
-                <div className="flex flex-wrap gap-4 mb-6 text-sm">
+                <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 text-xs sm:text-sm">
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded bg-red-500/80"></div>
                         <span className="text-off-white/70">Blocked</span>
@@ -250,7 +250,7 @@ export function AdminPage() {
                 </div>
 
                 {/* Month Navigation */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
                     <button
                         onClick={prevMonth}
                         disabled={isCurrentMonthOrPast}
@@ -258,7 +258,7 @@ export function AdminPage() {
                     >
                         <ChevronLeft size={24} />
                     </button>
-                    <h2 className="font-display font-bold text-2xl uppercase tracking-wider">
+                    <h2 className="font-display font-bold text-base sm:text-2xl uppercase tracking-wider text-center">
                         {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                     </h2>
                     <button
@@ -330,8 +330,8 @@ export function AdminPage() {
 
                         {/* Selected Date Panel */}
                         {selectedDate && (
-                            <div className="bg-off-white/5 border border-off-white/10 rounded-2xl p-6 mb-8">
-                                <h3 className="font-display font-bold text-lg uppercase tracking-wider mb-4">
+                            <div className="bg-off-white/5 border border-off-white/10 rounded-2xl p-4 sm:p-6 mb-8">
+                                <h3 className="font-display font-bold text-sm sm:text-lg uppercase tracking-wider mb-3 sm:mb-4">
                                     {formatSelectedDate(selectedDate)}
                                 </h3>
 
@@ -344,7 +344,7 @@ export function AdminPage() {
                                         </p>
                                         <div className="space-y-2">
                                             {selectedDateBookings.map((b: any) => (
-                                                <div key={b.id} className="bg-off-white/5 rounded-lg px-4 py-2 text-sm flex justify-between items-center">
+                                                <div key={b.id} className="bg-off-white/5 rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                                                     <span className="font-medium">{b.name}</span>
                                                     <span className="text-off-white/60">
                                                         {formatTime(b.start_datetime)} – {formatTime(b.end_datetime)}
