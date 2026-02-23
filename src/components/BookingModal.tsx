@@ -407,9 +407,6 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
               </Button>
             </div>
 
-            <p className="text-xs text-center text-gray-500">
-              This is a demo. No actual payment will be processed.
-            </p>
           </div>
         )}
 
