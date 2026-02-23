@@ -20,6 +20,11 @@ interface BookingModalProps {
   preselectedService?: string;
 }
 
+const getMinDate = () => {
+  const minDateConfig = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  return minDateConfig.toISOString().split('T')[0];
+};
+
 export function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
   const [step, setStep] = useState<Step>('service');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +36,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     instagram: '',
     phone: '',
     service: '',
-    date: '',
+    date: getMinDate(),
     time: '',
     notes: '',
   });
@@ -176,7 +181,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       instagram: '',
       phone: '',
       service: '',
-      date: '',
+      date: getMinDate(),
       time: '',
       notes: '',
     });
@@ -229,8 +234,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     return true; // No overlap
   };
 
-  const minDateConfig = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-  const minDate = minDateConfig.toISOString().split('T')[0];
+  const minDate = getMinDate();
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -335,10 +339,10 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                           disabled={!available}
                           onClick={() => setFormData({ ...formData, time })}
                           className={`py-3 px-2 rounded-xl border-2 text-[15px] font-bold transition-all duration-200 ${isSelected
-                              ? 'bg-near-black border-near-black text-acid-lime scale-105 shadow-md'
-                              : available
-                                ? 'border-black/10 hover:border-near-black text-gray-700 bg-white hover:bg-black/5'
-                                : 'border-black/5 bg-black/5 text-gray-400 line-through cursor-not-allowed opacity-50'
+                            ? 'bg-near-black border-near-black text-acid-lime scale-105 shadow-md'
+                            : available
+                              ? 'border-black/10 hover:border-near-black text-gray-700 bg-white hover:bg-black/5'
+                              : 'border-black/5 bg-black/5 text-gray-400 line-through cursor-not-allowed opacity-50'
                             }`}
                         >
                           {time}
@@ -460,9 +464,12 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                     <span className="text-gray-500 font-medium">Date & Time</span>
                     <span className="font-bold text-right">{formData.date} at {formData.time}</span>
                   </div>
-                  <div className="flex justify-between border-b border-black/5 pb-2">
-                    <span className="text-gray-500 font-medium">Location</span>
-                    <span className="font-bold text-right">Salford, Manchester<br />(M6 6DQ)</span>
+                  <div className="flex justify-between border-b border-black/5 pb-2 items-start">
+                    <span className="text-gray-500 font-medium shrink-0">Location</span>
+                    <div className="text-right">
+                      <span className="font-bold">Manchester</span>
+                      <span className="block text-[11px] font-normal text-gray-500 mt-0.5 leading-tight">(Full address & postcode<br />provided upon booking)</span>
+                    </div>
                   </div>
                   <div className="flex justify-between pt-1">
                     <span className="text-gray-500 font-medium">Estimated Total Price</span>
