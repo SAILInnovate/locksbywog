@@ -1,0 +1,140 @@
+/* App-specific styles */
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure pinned sections stack correctly */
+.section-pinned {
+  will-change: transform;
+}
+
+/* Image hover effect */
+.image-frame {
+  transition: transform 0.3s ease;
+}
+
+.image-frame:hover {
+  transform: translateY(-4px);
+}
+
+/* Button press effect */
+.btn-primary:active,
+.btn-secondary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Sticker hover effect */
+.sticker,
+.sticker-lime {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sticker:hover,
+.sticker-lime:hover {
+  transform: translateY(-2px) rotate(0deg) !important;
+  box-shadow: 0 22px 0 rgba(0,0,0,0.2);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B6B4F;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CFFF00;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8e600;
+}
+
+/* Selection color */
+::selection {
+  background: #CFFF00;
+  color: #111111;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #CFFF00;
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .section-pinned {
+    height: auto;
+    min-height: 100vh;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .heading-xl {
+    font-size: 2.5rem;
+    line-height: 0.95;
+  }
+  
+  .heading-lg {
+    font-size: 2rem;
+    line-height: 0.95;
+  }
+  
+  .section-pinned {
+    overflow-x: hidden;
+  }
+  
+  /* Adjust sticker positions on mobile */
+  .sticker,
+  .sticker-lime {
+    padding: 0.75rem 1rem;
+  }
+  
+  .sticker span,
+  .sticker-lime span {
+    font-size: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .heading-xl {
+    font-size: 3.5rem;
+  }
+  
+  .heading-lg {
+    font-size: 2.5rem;
+  }
+}
+
+/* Loading state */
+.loading {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
