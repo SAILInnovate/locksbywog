@@ -104,7 +104,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
         <div className="image-frame overflow-hidden bg-off-white w-[90vw] md:w-[50vw] max-w-[500px]">
           <img
             src="/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg"
-            alt="Beautiful braids by LocksByWog"
+            alt="Beautiful locs by LocksByWog"
             className="w-full h-auto object-cover"
             style={{ aspectRatio: '4/5' }}
           />
