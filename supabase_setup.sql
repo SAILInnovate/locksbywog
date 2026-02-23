@@ -67,8 +67,10 @@ BEGIN
     SELECT 1 FROM bookings
     WHERE 
       -- Don't compare a booking against itself when updating
-      id != NEW.id 
-      AND status IN ('confirmed', 'pending') 
+      (NEW.id IS NULL OR id != NEW.id)
+      -- Only block slots that are fully confirmed. 
+      -- Pending checkouts should not lock the calendar forever if abandoned.
+      AND status = 'confirmed' 
       -- Overlap logic: Start time falls inside existing booking OR End time falls inside existing booking OR completely surrounds it
       AND (
         (NEW.start_datetime < end_datetime AND NEW.end_datetime > start_datetime)

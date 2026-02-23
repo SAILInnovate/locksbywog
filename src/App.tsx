@@ -21,6 +21,8 @@ function App() {
     return params.get('booking_success') === 'true';
   });
   const [preselectedService, setPreselectedService] = useState('');
+  const [existingBooking, setExistingBooking] = useState<{ service: string, date: string, time: string, total_price: number } | null>(null);
+
   const mainRef = useRef<HTMLElement>(null);
   const snapTriggerRef = useRef<ScrollTrigger | null>(null);
 
@@ -32,6 +34,23 @@ function App() {
     }
     setIsBookingOpen(true);
   };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('locksbywog_booking');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const bookingDate = new Date(`${parsed.date}T${parsed.time}:00`);
+        if (bookingDate >= new Date()) {
+          setExistingBooking(parsed);
+        } else {
+          localStorage.removeItem('locksbywog_booking');
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Wait for all ScrollTriggers to be created
@@ -126,6 +145,23 @@ function App() {
         onClose={() => setIsBookingOpen(false)}
         preselectedService={preselectedService}
       />
+
+      {/* Return Customer Booking Reminder */}
+      {existingBooking && (
+        <div className="bg-acid-lime text-near-black py-3 px-6 fixed bottom-0 left-0 right-0 z-[100] border-t-2 border-near-black shadow-lg flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-2">
+          <p className="font-display font-bold uppercase text-sm md:text-base">
+            📅 Upcoming Appointment: {existingBooking.service} on {existingBooking.date} at {existingBooking.time}
+          </p>
+          <button
+            onClick={() => {
+              setExistingBooking(null);
+            }}
+            className="text-xs uppercase font-bold underline hover:no-underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </>
   );
 }

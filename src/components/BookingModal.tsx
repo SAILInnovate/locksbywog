@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2 } from 'lucide-react';
-import { createBooking, getServices, supabase } from '@/lib/supabase';
+import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { createBooking, getServices, getBookedSlotsForDate, supabase } from '@/lib/supabase';
 import type { Service } from '@/lib/supabase';
 import {
   Dialog,
@@ -11,13 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
+type Step = 'service' | 'datetime' | 'details' | 'deposit' | 'success';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -26,58 +21,59 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
-  const [step, setStep] = useState<'form' | 'deposit' | 'success'>('form');
+  const [step, setStep] = useState<Step>('service');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
+  const [bookedSlots, setBookedSlots] = useState<{ start_datetime: string, end_datetime: string }[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     instagram: '',
     phone: '',
-    service: preselectedService || '',
+    service: '',
     date: '',
     time: '',
     notes: '',
   });
 
-  // Watch for preselectedService changes to auto-fill
-  useEffect(() => {
-    if (preselectedService) {
-      setFormData(prev => ({ ...prev, service: preselectedService }));
-    }
-  }, [preselectedService]);
-
   useEffect(() => {
     async function loadServices() {
-      if (isOpen) {
+      if (isOpen && services.length === 0) {
         const data = await getServices();
         setServices(data);
       }
     }
     loadServices();
-  }, [isOpen]);
+  }, [isOpen, services.length]);
 
   useEffect(() => {
-    // Check if coming back from Stripe Checkout
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('booking_success') === 'true') {
-      setStep('success');
-      // Optional: Clean up URL visually
-      window.history.replaceState({}, '', window.location.pathname);
+    if (isOpen) {
+      if (preselectedService) {
+        setFormData(prev => ({ ...prev, service: preselectedService }));
+        setStep('datetime'); // Jump securely to datetime if we opened with a service
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('booking_success') === 'true') {
+          setStep('success');
+          window.history.replaceState({}, '', window.location.pathname);
+        } else {
+          setStep('service');
+        }
+      }
     }
-  }, []);
+  }, [isOpen, preselectedService]);
 
-  // Force modal open if we just came back from successful redirect
-  // This interacts with App.tsx which might not open the modal immediately.
-  // Actually, if we just landed on ?booking_success=true, we might want to force open the modal.
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.instagram || !formData.phone || !formData.service || !formData.date || !formData.time) {
-      return;
+  useEffect(() => {
+    async function loadBookedSlots() {
+      if (formData.date) {
+        const slots = await getBookedSlotsForDate(formData.date);
+        setBookedSlots(slots);
+      } else {
+        setBookedSlots([]);
+      }
     }
-    setStep('deposit');
-  };
+    loadBookedSlots();
+  }, [formData.date]);
 
   const handleDepositPayment = async () => {
     setIsSubmitting(true);
@@ -125,7 +121,6 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     const bookingId = bData[0].id;
 
     if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      // Local fallback without Supabase config
       setIsSubmitting(false);
       setStep('success');
       return;
@@ -157,6 +152,14 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         return;
       }
 
+      // Save successful booking intent to local storage so user sees a reminder later
+      localStorage.setItem('locksbywog_booking', JSON.stringify({
+        service: selectedServiceDetails.name,
+        date: formData.date,
+        time: formData.time,
+        total_price: estimatedPrice
+      }));
+
       // Redirect to Stripe checkout url generated
       window.location.href = functionData.url;
     } catch (err) {
@@ -167,22 +170,29 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   };
 
   const resetForm = () => {
-    setStep('form');
     setFormData({
       name: '',
       email: '',
       instagram: '',
       phone: '',
-      service: preselectedService || '',
+      service: '',
       date: '',
       time: '',
       notes: '',
     });
+    setStep('service');
+    setIsSubmitting(false);
   };
 
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const handleBack = () => {
+    if (step === 'datetime') setStep('service');
+    else if (step === 'details') setStep('datetime');
+    else if (step === 'deposit') setStep('details');
   };
 
   const timeSlots = [
@@ -194,277 +204,348 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const isLateNight = (time: string) => {
     if (!time) return false;
     const hour = parseInt(time.split(':')[0], 10);
-    return hour >= 22 || hour < 5; // 22:00 onwards
+    return hour >= 22 || hour < 5;
   };
 
   const selectedServiceDetails = services.find(s => s.name === formData.service);
   const isLate = isLateNight(formData.time);
   const estimatedPrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
 
+  const isTimeSlotAvailable = (timeStart: string) => {
+    if (!selectedServiceDetails || !formData.date) return true;
+
+    const startDateTime = new Date(`${formData.date}T${timeStart}:00`);
+    const endDateTime = new Date(startDateTime.getTime() + selectedServiceDetails.duration_minutes * 60000);
+
+    for (const slot of bookedSlots) {
+      const bStart = new Date(slot.start_datetime);
+      const bEnd = new Date(slot.end_datetime);
+
+      // Check overlap
+      if (startDateTime < bEnd && endDateTime > bStart) {
+        return false; // Overlap found
+      }
+    }
+    return true; // No overlap
+  };
+
   const minDateConfig = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
   const minDate = minDateConfig.toISOString().split('T')[0];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display font-black text-2xl uppercase">
-            {step === 'form' && 'Book Your Slot'}
-            {step === 'deposit' && 'Secure Your Booking'}
-            {step === 'success' && 'Booking Confirmed!'}
+      <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] rounded-2xl p-6">
+
+        <DialogHeader className="relative pb-4">
+          {step !== 'service' && step !== 'success' && (
+            <button
+              onClick={handleBack}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -mt-2 p-1.5 hover:bg-black/5 rounded-full transition-colors shrink-0 z-10"
+              aria-label="Go back"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+          <DialogTitle className="font-display font-black text-2xl uppercase text-center w-full">
+            {step === 'service' && 'Select Service'}
+            {step === 'datetime' && 'Date & Time'}
+            {step === 'details' && 'Your Details'}
+            {step === 'deposit' && 'Secure Booking'}
+            {step === 'success' && 'Confirmed!'}
           </DialogTitle>
         </DialogHeader>
 
-        {step === 'form' && (
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="name" className="font-display font-bold uppercase text-sm">
-                Your Name *
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="border-2 border-near-black mt-1"
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
+        {/* PROGRESS BAR */}
+        {step !== 'success' && (
+          <div className="w-full bg-black/5 h-2 rounded-full overflow-hidden mb-2">
+            <div
+              className="bg-acid-lime h-full transition-all duration-500 ease-out"
+              style={{ width: step === 'service' ? '25%' : step === 'datetime' ? '50%' : step === 'details' ? '75%' : '100%' }}
+            />
+          </div>
+        )}
 
-            <div>
-              <Label htmlFor="email" className="font-display font-bold uppercase text-sm">
-                Email Address *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="border-2 border-near-black mt-1"
-                placeholder="you@email.com"
-                required
-              />
+        <div className="pt-2">
+          {/* STEP 1: SERVICE */}
+          {step === 'service' && (
+            <div className="space-y-3 animation-fade-in">
+              {services.map(svc => (
+                <button
+                  key={svc.id}
+                  onClick={() => { setFormData({ ...formData, service: svc.name }); setStep('datetime'); }}
+                  className="w-full text-left p-4 rounded-xl border-2 border-black/10 hover:border-near-black transition-all flex justify-between items-center group bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div>
+                    <h4 className="font-display font-bold uppercase text-lg">{svc.name}</h4>
+                    <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                      <Clock size={14} className="inline opacity-70" /> {svc.duration}
+                      <span className="opacity-40">•</span>
+                      <span className="font-bold text-money-green">From £{svc.price_from}</span>
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-near-black flex items-center justify-center group-hover:bg-acid-lime transition-colors shrink-0">
+                    <ChevronRight size={18} strokeWidth={3} />
+                  </div>
+                </button>
+              ))}
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="instagram" className="font-display font-bold uppercase text-sm">
-                Instagram Name *
-              </Label>
-              <Input
-                id="instagram"
-                value={formData.instagram}
-                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                className="border-2 border-near-black mt-1"
-                placeholder="@yourhandle"
-                required
-              />
-            </div>
+          {/* STEP 2: DATETIME */}
+          {step === 'datetime' && (
+            <div className="space-y-8 animation-fade-in">
+              <div className="bg-money-green/10 p-4 rounded-xl border border-money-green/20">
+                <p className="font-display font-bold uppercase text-sm mb-1 text-money-green">Selected Service</p>
+                <p className="font-semibold">{formData.service} <span className="font-normal text-gray-600">({selectedServiceDetails?.duration})</span></p>
+              </div>
 
-            <div>
-              <Label htmlFor="phone" className="font-display font-bold uppercase text-sm">
-                Phone Number *
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="border-2 border-near-black mt-1"
-                placeholder="+44 7XXX XXXXXX"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="service" className="font-display font-bold uppercase text-sm">
-                Service *
-              </Label>
-              <Select
-                value={formData.service}
-                onValueChange={(value) => setFormData({ ...formData, service: value })}
-              >
-                <SelectTrigger className="border-2 border-near-black mt-1">
-                  <SelectValue placeholder="Select a service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map((service) => (
-                    <SelectItem key={service.id} value={service.name}>
-                      {service.name} - From £{service.price_from}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="date" className="font-display font-bold uppercase text-sm">
-                  Date *
+                <Label className="font-display font-bold uppercase text-sm mb-3 flex items-center gap-2">
+                  <CalendarIcon size={18} /> 1. Select Date
                 </Label>
                 <Input
-                  id="date"
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="border-2 border-near-black mt-1"
+                  onChange={(e) => {
+                    setFormData({ ...formData, date: e.target.value, time: '' }); // Reset time when date changes
+                  }}
+                  className="border-2 border-black/20 focus:border-near-black p-4 h-auto text-lg w-full rounded-xl transition-colors cursor-pointer"
                   min={minDate}
                   required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="time" className="font-display font-bold uppercase text-sm">
-                  Time *
+              <div className="space-y-4">
+                <Label className="font-display font-bold uppercase text-sm flex items-center gap-2">
+                  <Clock size={18} /> 2. Select Time
                 </Label>
-                <Select
-                  value={formData.time}
-                  onValueChange={(value) => setFormData({ ...formData, time: value })}
-                >
-                  <SelectTrigger className="border-2 border-near-black mt-1">
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlots.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+                {!formData.date ? (
+                  <div className="p-6 bg-black/5 rounded-xl border-2 border-dashed border-black/10 text-center">
+                    <p className="text-gray-500 font-medium">Please pick a date first to see available slots.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {timeSlots.map((time) => {
+                      const available = isTimeSlotAvailable(time);
+                      const isSelected = formData.time === time;
+                      return (
+                        <button
+                          key={time}
+                          disabled={!available}
+                          onClick={() => setFormData({ ...formData, time })}
+                          className={`py-3 px-2 rounded-xl border-2 text-[15px] font-bold transition-all duration-200 ${isSelected
+                              ? 'bg-near-black border-near-black text-acid-lime scale-105 shadow-md'
+                              : available
+                                ? 'border-black/10 hover:border-near-black text-gray-700 bg-white hover:bg-black/5'
+                                : 'border-black/5 bg-black/5 text-gray-400 line-through cursor-not-allowed opacity-50'
+                            }`}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              <Button
+                onClick={() => {
+                  if (!formData.date || !formData.time) {
+                    alert("Please select both a date and a time.");
+                    return;
+                  }
+                  setStep('details');
+                }}
+                disabled={!formData.date || !formData.time}
+                className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-bold uppercase py-7 text-lg hover:bg-acid-lime/80 disabled:opacity-50 disabled:hover:scale-100 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111] disabled:shadow-none"
+              >
+                Next step
+              </Button>
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="notes" className="font-display font-bold uppercase text-sm">
-                Additional Notes
-              </Label>
-              <textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full border-2 border-near-black mt-1 p-3 rounded-md min-h-[80px] resize-none"
-                placeholder="Any special requests or questions..."
-              />
-            </div>
+          {/* STEP 3: DETAILS */}
+          {step === 'details' && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setStep('deposit');
+            }} className="space-y-5 animation-fade-in">
 
-            <div className="bg-money-green/10 p-4 rounded-md">
-              <p className="text-sm font-display font-bold uppercase">Deposit Required</p>
-              <p className="text-sm mt-1 mb-3">A £10 deposit is required to secure your booking. This will be deducted from your final payment.</p>
+              <div>
+                <Label htmlFor="name" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Your Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="border-2 border-black/10 focus:border-near-black mt-1 p-4 h-auto rounded-xl transition-colors bg-white font-medium text-lg"
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
 
-              {formData.service && formData.time && (
-                <div className="pt-3 border-t border-acid-lime/30">
-                  <p className="text-sm font-semibold">Estimated Service Price: £{estimatedPrice}</p>
-                  {isLate && (
-                    <p className="text-xs text-money-green font-bold mt-1 bg-acid-lime/20 inline-block px-2 py-1 rounded">
-                      Late Night Booking (10 PM+): Premium 2x rate applied.
-                    </p>
-                  )}
+              <div>
+                <Label htmlFor="email" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Email Address *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="border-2 border-black/10 focus:border-near-black mt-1 p-4 h-auto rounded-xl transition-colors bg-white font-medium text-lg"
+                  placeholder="you@email.com"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="instagram" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Instagram *</Label>
+                  <Input
+                    id="instagram"
+                    value={formData.instagram}
+                    onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                    className="border-2 border-black/10 focus:border-near-black mt-1 p-4 h-auto rounded-xl transition-colors bg-white font-medium text-lg"
+                    placeholder="@yourhandle"
+                    required
+                  />
                 </div>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-acid-lime text-near-black font-display font-black uppercase border-2 border-near-black hover:bg-acid-lime/90"
-            >
-              Continue to Deposit
-            </Button>
-          </form>
-        )}
-
-        {step === 'deposit' && (
-          <div className="space-y-6 mt-4">
-            <div className="bg-money-green/10 p-4 rounded-md">
-              <h3 className="font-display font-bold uppercase mb-2">Booking Summary</h3>
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Name:</span> {formData.name}</p>
-                <p><span className="font-semibold">Service:</span> {formData.service}</p>
-                <p><span className="font-semibold">Estimated Price:</span> £{estimatedPrice} {isLate ? '(Late Rate)' : ''}</p>
-                <p><span className="font-semibold">Date:</span> {formData.date}</p>
-                <p><span className="font-semibold">Time:</span> {formData.time}</p>
+                <div>
+                  <Label htmlFor="phone" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Phone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="border-2 border-black/10 focus:border-near-black mt-1 p-4 h-auto rounded-xl transition-colors bg-white font-medium text-lg"
+                    placeholder="+44 7XXX XXXXXX"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="text-center">
-              <p className="text-4xl font-display font-black">£10.00</p>
-              <p className="text-sm text-gray-600 mt-1">Non-refundable deposit</p>
-            </div>
+              <div>
+                <Label htmlFor="notes" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Any Note? (Optional)</Label>
+                <textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full border-2 border-black/10 focus:border-near-black mt-1 p-4 rounded-xl min-h-[100px] resize-none focus:outline-none transition-colors bg-white font-medium text-base"
+                  placeholder="Hair length, specific requests, etc..."
+                />
+              </div>
 
-            <div className="space-y-3">
+              <Button
+                type="submit"
+                className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-black uppercase py-7 text-lg hover:bg-acid-lime/80 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111]"
+              >
+                Review & Secure Deposit
+              </Button>
+            </form>
+          )}
+
+          {/* STEP 4: DEPOSIT */}
+          {step === 'deposit' && (
+            <div className="space-y-6 animation-fade-in">
+              <div className="bg-money-green/10 p-5 rounded-2xl border border-money-green/20">
+                <h3 className="font-display font-black uppercase text-lg mb-4 flex items-center gap-2">
+                  <Check className="text-money-green" size={20} strokeWidth={3} /> Booking Summary
+                </h3>
+
+                <div className="space-y-3 text-[15px]">
+                  <div className="flex justify-between border-b border-black/5 pb-2">
+                    <span className="text-gray-500 font-medium">Service</span>
+                    <span className="font-bold text-right">{formData.service}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-black/5 pb-2">
+                    <span className="text-gray-500 font-medium">Date & Time</span>
+                    <span className="font-bold text-right">{formData.date} at {formData.time}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-black/5 pb-2">
+                    <span className="text-gray-500 font-medium">Location</span>
+                    <span className="font-bold text-right">Salford, Manchester<br />(M6 6DQ)</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="text-gray-500 font-medium">Estimated Total Price</span>
+                    <div className="text-right">
+                      <span className="font-bold text-lg">£{estimatedPrice}</span>
+                      {isLate && <div className="block mt-1"><span className="text-[11px] text-money-green font-bold bg-acid-lime/20 px-2 py-0.5 rounded uppercase tracking-wider">Late Rate Applied</span></div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center bg-black-[0.03] border-2 border-dashed border-black/10 p-6 rounded-2xl">
+                <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Due Today</p>
+                <p className="text-6xl font-display font-black tracking-tight text-near-black">£10</p>
+                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Pay your non-refundable deposit via card to secure this exact slot.</p>
+              </div>
+
               <Button
                 onClick={handleDepositPayment}
                 disabled={isSubmitting}
-                className="w-full bg-acid-lime text-near-black font-display font-black uppercase border-2 border-near-black hover:bg-acid-lime/90"
+                className="w-full bg-near-black text-acid-lime border-2 border-near-black font-display font-black uppercase py-8 text-xl hover:bg-near-black/90 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#c3ff00] hover:shadow-[2px_2px_0px_#c3ff00]"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    Connecting...
                   </>
                 ) : (
-                  'Pay £10 Deposit'
+                  'Pay Deposit & Finish'
                 )}
               </Button>
+            </div>
+          )}
+
+          {/* STEP 5: SUCCESS */}
+          {step === 'success' && (
+            <div className="text-center space-y-6 py-4 animation-fade-in">
+              <div className="w-24 h-24 bg-acid-lime rounded-full flex items-center justify-center mx-auto shadow-[4px_4px_0px_#111]">
+                <Check className="w-12 h-12 text-near-black" strokeWidth={3} />
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-display font-black uppercase">Slot Secured!</h2>
+                <p className="text-base text-gray-600 mt-3 max-w-[300px] mx-auto">
+                  We've sent a detailed confirmation to your email. I'll reach out on Instagram soon!
+                </p>
+              </div>
+
+              <div className="bg-money-green/5 p-5 rounded-2xl border-2 border-money-green/10 text-left">
+                <p className="font-display font-bold uppercase text-money-green mb-3 tracking-wide">Final Details</p>
+                <div className="space-y-2 text-sm">
+                  <p><span className="text-gray-500 inline-block w-20">Service:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('service') || formData.service || "Booking"}</span></p>
+                  <p><span className="text-gray-500 inline-block w-20">Date:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('date') || formData.date}</span></p>
+                  <p><span className="text-gray-500 inline-block w-20">Time:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('time') || formData.time}</span></p>
+                  <p><span className="text-gray-500 inline-block w-20">Where:</span> <span className="font-bold">Salford (M6 6DQ)</span></p>
+                </div>
+
+                <div className="mt-5 pt-4 border-t-2 border-dashed border-money-green/20">
+                  {(() => {
+                    const priceParam = new URLSearchParams(window.location.search).get('total_price');
+                    const total = priceParam ? parseFloat(priceParam) : estimatedPrice;
+                    if (total > 0) {
+                      return (
+                        <div>
+                          <p className="text-xs uppercase font-bold text-gray-500 tracking-wider mb-1">To pay on the day (Cash Only)</p>
+                          <p className="text-2xl font-display font-black text-money-green">£{total - 10} <span className="text-sm font-normal text-gray-500 ml-1 tracking-normal">(£10 paid)</span></p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+
               <Button
-                onClick={() => setStep('form')}
-                variant="outline"
-                className="w-full border-2 border-near-black font-display font-bold uppercase"
-                disabled={isSubmitting}
+                onClick={handleClose}
+                className="w-full bg-near-black text-white font-display font-bold uppercase py-6 text-lg rounded-full hover:bg-near-black/80 transition-colors"
               >
-                Back
+                Back To Website
               </Button>
             </div>
-
-          </div>
-        )}
-
-        {step === 'success' && (
-          <div className="text-center space-y-6 mt-4">
-            <div className="w-20 h-20 bg-acid-lime rounded-full flex items-center justify-center mx-auto">
-              <Check className="w-10 h-10 text-near-black" />
-            </div>
-
-            <div>
-              <p className="text-lg font-semibold">Your booking has been confirmed!</p>
-              <p className="text-sm text-gray-600 mt-2">
-                We've sent a confirmation to your email. See you soon!
-              </p>
-            </div>
-
-            <div className="bg-money-green/10 p-4 rounded-md text-left">
-              <p className="font-display font-bold uppercase mb-2">Booking Details</p>
-              <div className="space-y-1 text-sm">
-                <p><span className="font-semibold">Service:</span> {new URLSearchParams(window.location.search).get('service') || formData.service}</p>
-                <p><span className="font-semibold">Date:</span> {new URLSearchParams(window.location.search).get('date') || formData.date}</p>
-                <p><span className="font-semibold">Time:</span> {new URLSearchParams(window.location.search).get('time') || formData.time}</p>
-                <p><span className="font-semibold">Location:</span> Salford, Manchester (M6 6DQ)</p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-acid-lime/30 text-sm">
-                {(() => {
-                  const priceParam = new URLSearchParams(window.location.search).get('total_price');
-                  // Use param if we just reloaded, otherwise use the estimatedPrice we calculated
-                  const total = priceParam ? parseFloat(priceParam) : estimatedPrice;
-                  if (total > 0) {
-                    return (
-                      <p className="font-bold text-money-green">
-                        To pay in cash on the day: £{total - 10} <span className="font-normal text-gray-600">(£10 deposit already paid)</span>
-                      </p>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-
-            <Button
-              onClick={handleClose}
-              className="w-full bg-acid-lime text-near-black font-display font-black uppercase border-2 border-near-black hover:bg-acid-lime/90"
-            >
-              Done
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -149,3 +149,26 @@ export async function getBookings() {
 
   return { data, error };
 }
+
+// Helper function to get booked times for a specific date
+export async function getBookedSlotsForDate(dateStr: string) {
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  // Parse strings directly for Supabase matching. Format: YYYY-MM-DD
+  const startOfDay = `${dateStr}T00:00:00.000Z`;
+  const endOfDay = `${dateStr}T23:59:59.999Z`;
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('start_datetime, end_datetime')
+    .eq('status', 'confirmed')
+    .gte('start_datetime', startOfDay)
+    .lte('start_datetime', endOfDay);
+
+  if (error) {
+    console.error('Error fetching booked slots:', error);
+    return [];
+  }
+
+  return data || [];
+}
