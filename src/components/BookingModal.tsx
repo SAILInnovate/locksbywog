@@ -121,7 +121,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-off-white text-near-black border-2 border-near-black max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display font-black text-2xl uppercase">
             {step === 'form' && 'Book Your Slot'}

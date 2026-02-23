@@ -81,7 +81,7 @@ export async function getServices(): Promise<Service[]> {
       .from('services')
       .select('*')
       .eq('is_active', true)
-      .order('price_from', { ascending: false }); // Optional ordering
+      .order('base_price', { ascending: false }); // Optional ordering
 
     if (error || !data) {
       console.warn('Error fetching services from Supabase, returning fallback.', error);
