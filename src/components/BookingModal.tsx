@@ -235,10 +235,11 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   };
 
   const minDate = getMinDate();
+  const isInvalidDate = formData.date ? formData.date < minDate : false;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] rounded-2xl p-6">
+      <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-lg max-h-[90vh] overflow-x-hidden overflow-y-auto w-[95vw] sm:w-[90vw] rounded-2xl p-5 sm:p-6 !box-border">
 
         <DialogHeader className="relative pb-4">
           {step !== 'service' && step !== 'success' && (
@@ -303,20 +304,30 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 <p className="font-semibold">{formData.service} <span className="font-normal text-gray-600">({selectedServiceDetails?.duration})</span></p>
               </div>
 
-              <div>
-                <Label className="font-display font-bold uppercase text-sm mb-3 flex items-center gap-2">
+              <div className="w-full">
+                <Label className={`font-display font-bold uppercase text-sm mb-3 flex items-center gap-2 ${isInvalidDate ? 'text-red-600' : ''}`}>
                   <CalendarIcon size={18} /> 1. Select Date
                 </Label>
-                <Input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => {
-                    setFormData({ ...formData, date: e.target.value, time: '' }); // Reset time when date changes
-                  }}
-                  className="border-2 border-black/20 focus:border-near-black p-4 h-auto text-lg w-full rounded-xl transition-colors cursor-pointer"
-                  min={minDate}
-                  required
-                />
+                <div className="w-full max-w-full overflow-hidden block box-border relative">
+                  <Input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => {
+                      setFormData({ ...formData, date: e.target.value, time: '' }); // Reset time when date changes
+                    }}
+                    className={`border-2 p-3 sm:p-4 h-auto text-base sm:text-lg w-full max-w-full rounded-xl transition-all cursor-pointer box-border block appearance-none ${isInvalidDate
+                        ? 'border-red-500 bg-red-50/50 shadow-[0_0_15px_rgba(239,68,68,0.4)] text-red-700'
+                        : 'border-black/20 focus:border-near-black'
+                      }`}
+                    min={minDate}
+                    required
+                  />
+                  {isInvalidDate && (
+                    <p className="text-red-600 text-[11px] sm:text-xs font-bold mt-2 font-display uppercase tracking-wide">
+                      ⚠ Please select a date at least 2 days from now.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -355,13 +366,17 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
               <Button
                 onClick={() => {
+                  if (isInvalidDate) {
+                    alert("Please select a date at least 2 days from now.");
+                    return;
+                  }
                   if (!formData.date || !formData.time) {
-                    alert("Please select both a date and a time.");
+                    alert("Please select both a valid date and a time.");
                     return;
                   }
                   setStep('details');
                 }}
-                disabled={!formData.date || !formData.time}
+                disabled={!formData.date || !formData.time || isInvalidDate}
                 className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-bold uppercase py-7 text-lg hover:bg-acid-lime/80 disabled:opacity-50 disabled:hover:scale-100 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111] disabled:shadow-none"
               >
                 Next step
