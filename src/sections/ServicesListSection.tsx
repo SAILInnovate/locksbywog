@@ -99,6 +99,7 @@ export function ServicesListSection({ onBookClick }: ServicesListSectionProps) {
 
   return (
     <section
+      id="services"
       ref={sectionRef}
       className="relative bg-money-green py-20 md:py-32 z-[70]"
     >

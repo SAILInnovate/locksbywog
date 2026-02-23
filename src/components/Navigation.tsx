@@ -19,6 +19,11 @@ export function Navigation({ onBookClick }: NavigationProps) {
   }, []);
 
   const scrollToSection = (id: string) => {
+    if (id === 'hero') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setIsMenuOpen(false);
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
