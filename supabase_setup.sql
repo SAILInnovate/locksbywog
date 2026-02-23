@@ -143,3 +143,25 @@ CREATE TRIGGER update_bookings_updated_at
 BEFORE UPDATE ON bookings
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+
+-- 6. Create the 'blocked_dates' table for admin day-off management
+CREATE TABLE IF NOT EXISTS blocked_dates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  blocked_date DATE NOT NULL UNIQUE,
+  reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE blocked_dates ENABLE ROW LEVEL SECURITY;
+
+-- Allow public to read blocked dates so the booking modal can check them
+CREATE POLICY "Public can view blocked dates"
+ON blocked_dates FOR SELECT
+USING (true);
+
+-- Only service_role (admin via Edge Function or direct SQL) can insert/delete
+CREATE POLICY "Service role can manage blocked dates"
+ON blocked_dates FOR ALL
+USING (true)
+WITH CHECK (true);

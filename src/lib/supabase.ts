@@ -172,3 +172,83 @@ export async function getBookedSlotsForDate(dateStr: string) {
 
   return data || [];
 }
+
+// Helper function to get all blocked dates from today onwards
+export async function getBlockedDates(): Promise<string[]> {
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .select('blocked_date')
+    .gte('blocked_date', today)
+    .order('blocked_date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching blocked dates:', error);
+    return [];
+  }
+
+  return (data || []).map((d: { blocked_date: string }) => d.blocked_date);
+}
+
+// Helper function to add a blocked date (admin only — uses anon key but RLS allows insert for now)
+export async function addBlockedDate(date: string, reason?: string) {
+  if (!supabaseUrl || !supabaseKey) return { error: 'Not configured' };
+
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .insert([{ blocked_date: date, reason: reason || null }])
+    .select();
+
+  return { data, error };
+}
+
+// Helper function to remove a blocked date
+export async function removeBlockedDate(date: string) {
+  if (!supabaseUrl || !supabaseKey) return { error: 'Not configured' };
+
+  const { error } = await supabase
+    .from('blocked_dates')
+    .delete()
+    .eq('blocked_date', date);
+
+  return { error };
+}
+
+// Helper to check if a date is blocked
+export async function isDateBlocked(dateStr: string): Promise<boolean> {
+  if (!supabaseUrl || !supabaseKey) return false;
+
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .select('id')
+    .eq('blocked_date', dateStr)
+    .maybeSingle();
+
+  if (error) return false;
+  return !!data;
+}
+
+// Helper to get confirmed bookings for a specific date (used by admin page)
+export async function getConfirmedBookingsForDate(dateStr: string) {
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  const startOfDay = `${dateStr}T00:00:00.000Z`;
+  const endOfDay = `${dateStr}T23:59:59.999Z`;
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('id, name, start_datetime, end_datetime, status')
+    .eq('status', 'confirmed')
+    .gte('start_datetime', startOfDay)
+    .lte('start_datetime', endOfDay);
+
+  if (error) {
+    console.error('Error fetching bookings for date:', error);
+    return [];
+  }
+
+  return data || [];
+}

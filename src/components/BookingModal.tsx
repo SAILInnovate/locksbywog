@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { createBooking, getServices, getBookedSlotsForDate, supabase } from '@/lib/supabase';
+import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates, supabase } from '@/lib/supabase';
 import type { Service } from '@/lib/supabase';
 import {
   Dialog,
@@ -30,6 +30,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [bookedSlots, setBookedSlots] = useState<{ start_datetime: string, end_datetime: string }[]>([]);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -79,6 +80,16 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     }
     loadBookedSlots();
   }, [formData.date]);
+
+  useEffect(() => {
+    async function loadBlockedDates() {
+      if (isOpen) {
+        const dates = await getBlockedDates();
+        setBlockedDates(dates);
+      }
+    }
+    loadBlockedDates();
+  }, [isOpen]);
 
   const handleDepositPayment = async () => {
     setIsSubmitting(true);
@@ -239,6 +250,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
   const minDate = getMinDate();
   const isInvalidDate = formData.date ? formData.date < minDate : false;
+  const isBlockedDate = formData.date ? blockedDates.includes(formData.date) : false;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -342,6 +354,11 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   <div className="p-6 bg-black/5 rounded-xl border-2 border-dashed border-black/10 text-center">
                     <p className="text-gray-500 font-medium">Please pick a date first to see available slots.</p>
                   </div>
+                ) : isBlockedDate ? (
+                  <div className="p-6 bg-red-50 rounded-xl border-2 border-red-200 text-center">
+                    <p className="text-red-600 font-bold text-sm uppercase">🚫 Not available on this day</p>
+                    <p className="text-red-500 text-xs mt-1">Please choose a different date.</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {timeSlots.map((time) => {
@@ -379,7 +396,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   }
                   setStep('details');
                 }}
-                disabled={!formData.date || !formData.time || isInvalidDate}
+                disabled={!formData.date || !formData.time || isInvalidDate || isBlockedDate}
                 className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-bold uppercase py-7 text-lg hover:bg-acid-lime/80 disabled:opacity-50 disabled:hover:scale-100 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111] disabled:shadow-none"
               >
                 Next step
