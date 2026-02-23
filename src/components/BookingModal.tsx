@@ -127,6 +127,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const isLate = isLateNight(formData.time);
   const estimatedPrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
 
+  const minDateConfig = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  const minDate = minDateConfig.toISOString().split('T')[0];
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-md max-h-[90vh] overflow-y-auto">
@@ -215,7 +218,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className="border-2 border-near-black mt-1"
-                  min={new Date().toISOString().split('T')[0]}
+                  min={minDate}
                   required
                 />
               </div>
