@@ -226,8 +226,11 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       const bStart = new Date(slot.start_datetime);
       const bEnd = new Date(slot.end_datetime);
 
-      // Check overlap
-      if (startDateTime < bEnd && endDateTime > bStart) {
+      const bEndWithBuffer = new Date(bEnd.getTime() + 3 * 60 * 60 * 1000); // 3-hour buffer
+      const endDateTimeWithBuffer = new Date(endDateTime.getTime() + 3 * 60 * 60 * 1000); // 3-hour buffer
+
+      // Check overlap (new start < existing end + 3h AND new end + 3h > existing start)
+      if (startDateTime < bEndWithBuffer && endDateTimeWithBuffer > bStart) {
         return false; // Overlap found
       }
     }
@@ -316,8 +319,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                       setFormData({ ...formData, date: e.target.value, time: '' }); // Reset time when date changes
                     }}
                     className={`border-2 p-3 sm:p-4 h-auto text-base sm:text-lg w-full max-w-full rounded-xl transition-all cursor-pointer box-border block appearance-none ${isInvalidDate
-                        ? 'border-red-500 bg-red-50/50 shadow-[0_0_15px_rgba(239,68,68,0.4)] text-red-700'
-                        : 'border-black/20 focus:border-near-black'
+                      ? 'border-red-500 bg-red-50/50 shadow-[0_0_15px_rgba(239,68,68,0.4)] text-red-700'
+                      : 'border-black/20 focus:border-near-black'
                       }`}
                     min={minDate}
                     required

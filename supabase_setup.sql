@@ -73,7 +73,7 @@ BEGIN
       AND status = 'confirmed' 
       -- Overlap logic: Start time falls inside existing booking OR End time falls inside existing booking OR completely surrounds it
       AND (
-        (NEW.start_datetime < end_datetime AND NEW.end_datetime > start_datetime)
+        (NEW.start_datetime < (end_datetime + INTERVAL '3 hours') AND (NEW.end_datetime + INTERVAL '3 hours') > start_datetime)
       )
   ) INTO overlap_exists;
 
