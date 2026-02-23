@@ -129,7 +129,8 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'created_a
 
   const { data, error } = await supabase
     .from('bookings')
-    .insert([bookingData]);
+    .insert([bookingData])
+    .select();
 
   return { data, error };
 }

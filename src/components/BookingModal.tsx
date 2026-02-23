@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
-import { createBooking, getServices } from '@/lib/supabase';
+import { createBooking, getServices, supabase } from '@/lib/supabase';
 import type { Service } from '@/lib/supabase';
 import {
   Dialog,
@@ -57,6 +57,20 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     loadServices();
   }, [isOpen]);
 
+  useEffect(() => {
+    // Check if coming back from Stripe Checkout
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('booking_success') === 'true') {
+      setStep('success');
+      // Optional: Clean up URL visually
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Force modal open if we just came back from successful redirect
+  // This interacts with App.tsx which might not open the modal immediately.
+  // Actually, if we just landed on ?booking_success=true, we might want to force open the modal.
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.instagram || !formData.phone || !formData.service || !formData.date || !formData.time) {
@@ -67,9 +81,6 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
   const handleDepositPayment = async () => {
     setIsSubmitting(true);
-
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
 
     const selectedServiceDetails = services.find(s => s.name === formData.service);
     if (!selectedServiceDetails) {
@@ -89,7 +100,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     const estimatedPrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
 
     // Create booking
-    const { error } = await createBooking({
+    const { data: bData, error } = await createBooking({
       service_id: selectedServiceDetails.id,
       name: formData.name,
       email: formData.email,
@@ -97,19 +108,53 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       phone: formData.phone,
       start_datetime: startDateTime.toISOString(),
       end_datetime: endDateTime.toISOString(),
-      deposit_paid: true,
+      deposit_paid: false,
       deposit_amount: 10,
       total_price: estimatedPrice,
       notes: formData.notes,
       status: 'pending',
     });
 
-    setIsSubmitting(false);
+    if (error || !bData || bData.length === 0) {
+      console.error(error);
+      alert('Something went wrong creating the booking. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
 
-    if (!error) {
+    const bookingId = bData[0].id;
+
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      // Local fallback without Supabase config
+      setIsSubmitting(false);
       setStep('success');
-    } else {
-      alert('Something went wrong. Please try again.');
+      return;
+    }
+
+    try {
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          booking_id: bookingId,
+          name: formData.name,
+          email: formData.email,
+          service_name: selectedServiceDetails.name,
+          return_url: window.location.origin
+        }
+      });
+
+      if (functionError || !functionData?.url) {
+        console.error('Checkout error:', functionError || functionData);
+        alert('Could not initiate payment. Please contact us or try again later.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Redirect to Stripe checkout url generated
+      window.location.href = functionData.url;
+    } catch (err) {
+      console.error('Network error during checkout:', err);
+      alert('Payment initialization failed. Please try again.');
+      setIsSubmitting(false);
     }
   };
 

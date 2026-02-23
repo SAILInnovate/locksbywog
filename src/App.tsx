@@ -20,7 +20,10 @@ import { ContactSection } from '@/sections/ContactSection';
 gsap.registerPlugin(ScrollTrigger);
 
 function App() {
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('booking_success') === 'true';
+  });
   const [preselectedService, setPreselectedService] = useState('');
   const mainRef = useRef<HTMLElement>(null);
   const snapTriggerRef = useRef<ScrollTrigger | null>(null);
