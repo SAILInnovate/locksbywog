@@ -117,7 +117,7 @@ serve(async (req) => {
     const wogData = await resend.emails.send({
       from: "LocksByWog Bookings <bookings@blocq.co.uk>",
       to: ["lovelymorales2110@gmail.com"],
-      subject: `New Booking! ${booking.name} - ${dateFormatted} at ${timeFormatted}`,
+      subject: `🚨 NEW BOOKING 🚨: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
       html: emailHtml,
     });
 
@@ -139,7 +139,7 @@ serve(async (req) => {
           <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; line-height: 1.8;">
             <li><strong>Date:</strong> ${dateFormatted}</li>
             <li><strong>Time:</strong> ${timeFormatted}</li>
-            <li><strong>Location:</strong> Salford, Manchester</li>
+            <li><strong>Location:</strong> Salford, Manchester (M6 6DQ)</li>
           </ul>
         </div>
         

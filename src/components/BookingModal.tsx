@@ -437,7 +437,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 <p><span className="font-semibold">Service:</span> {new URLSearchParams(window.location.search).get('service') || formData.service}</p>
                 <p><span className="font-semibold">Date:</span> {new URLSearchParams(window.location.search).get('date') || formData.date}</p>
                 <p><span className="font-semibold">Time:</span> {new URLSearchParams(window.location.search).get('time') || formData.time}</p>
-                <p><span className="font-semibold">Location:</span> Salford, Manchester</p>
+                <p><span className="font-semibold">Location:</span> Salford, Manchester (M6 6DQ)</p>
               </div>
 
               <div className="mt-4 pt-3 border-t border-acid-lime/30 text-sm">
