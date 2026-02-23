@@ -17,9 +17,13 @@ CREATE TABLE services (
 -- Insert initial mock data into 'services'
 INSERT INTO services (name, description, base_price, deposit_required, duration_minutes)
 VALUES 
-  ('Locs & Retwists', 'Neat parts, clean finish, healthy edges. Keep your locs looking fresh.', 35.00, 10.00, 180), -- 3 hours
-  ('Cornrows', 'Sleek, stylish cornrows for any occasion.', 40.00, 10.00, 90), -- 1.5 hours
-  ('Kids'' Styles', 'Quick, gentle, long-lasting styles for the little ones.', 25.00, 10.00, 120); -- 2 hours
+  ('Retwists', 'Neat parts, clean finish, healthy edges.', 35.00, 10.00, 150),
+  ('Cornrows', 'Sleek, stylish cornrows for any occasion.', 40.00, 10.00, 90),
+  ('Retwist two strands', 'Double the twist for a chunky, defined look.', 35.00, 10.00, 180),
+  ('Half barrel two strands', 'A hybrid style giving you the best of both worlds.', 40.00, 10.00, 180),
+  ('6+ Barrel twists', 'Intricate barrel twists for a statement protective style.', 40.00, 10.00, 210),
+  ('2-4 barrel twists', 'Thick, bold barrel twists perfect for a durable style.', 35.00, 10.00, 150),
+  ('Kids'' Styles', 'Quick, gentle, long-lasting styles for the little ones.', 25.00, 10.00, 120);
 
 
 -- 2. Create the 'bookings' table
