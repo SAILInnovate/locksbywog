@@ -1,0 +1,8 @@
+{
+    "tasks": {
+        "start": "deno run --watch main.ts"
+    },
+    "imports": {
+        "https://esm.sh/v135/resend@3.2.0/es2022/resend.mjs": "https://esm.sh/v135/resend@3.2.0/es2022/resend.mjs"
+    }
+}
