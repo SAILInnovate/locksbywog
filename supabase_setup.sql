@@ -17,11 +17,9 @@ CREATE TABLE services (
 -- Insert initial mock data into 'services'
 INSERT INTO services (name, description, base_price, deposit_required, duration_minutes)
 VALUES 
-  ('Knotless Braids', 'Lightweight, natural-looking, scalp-friendly braids that last for weeks.', 45.00, 15.00, 240), -- 4 hours
   ('Locs & Retwists', 'Neat parts, clean finish, healthy edges. Keep your locs looking fresh.', 35.00, 10.00, 180), -- 3 hours
-  ('Kids'' Styles', 'Quick, gentle, long-lasting styles for the little ones.', 25.00, 10.00, 120), -- 2 hours
-  ('Box Braids', 'Classic protective style with clean parts and professional finish.', 50.00, 15.00, 300), -- 5 hours
-  ('Cornrows', 'Sleek, stylish cornrows for any occasion.', 30.00, 10.00, 90); -- 1.5 hours
+  ('Cornrows', 'Sleek, stylish cornrows for any occasion.', 40.00, 10.00, 90), -- 1.5 hours
+  ('Kids'' Styles', 'Quick, gentle, long-lasting styles for the little ones.', 25.00, 10.00, 120); -- 2 hours
 
 
 -- 2. Create the 'bookings' table
