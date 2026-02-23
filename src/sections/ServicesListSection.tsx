@@ -8,7 +8,7 @@ import { ClockIcon } from '@/components/Icons';
 gsap.registerPlugin(ScrollTrigger);
 
 interface ServicesListSectionProps {
-  onBookClick: () => void;
+  onBookClick: (service?: string) => void;
 }
 
 export function ServicesListSection({ onBookClick }: ServicesListSectionProps) {
@@ -144,7 +144,7 @@ export function ServicesListSection({ onBookClick }: ServicesListSectionProps) {
                   </p>
                 </div>
                 <button
-                  onClick={onBookClick}
+                  onClick={() => onBookClick(service.name)}
                   className="bg-money-green text-off-white font-display font-bold uppercase text-sm px-5 py-2.5 border-2 border-near-black hover:bg-money-green/90 transition-colors"
                 >
                   Book
@@ -182,7 +182,7 @@ export function ServicesListSection({ onBookClick }: ServicesListSectionProps) {
 
         {/* CTA */}
         <div ref={ctaRef} className="mt-12 md:mt-16 text-center">
-          <button onClick={onBookClick} className="btn-primary">
+          <button onClick={() => onBookClick()} className="btn-primary">
             Book Your Appointment
           </button>
           <p className="micro-label text-off-white/60 mt-4">

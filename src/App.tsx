@@ -13,18 +13,26 @@ import { StatementSection } from '@/sections/StatementSection';
 import { AboutSection } from '@/sections/AboutSection';
 import { ServicesSection } from '@/sections/ServicesSection';
 import { PortfolioSection } from '@/sections/PortfolioSection';
-import { BookingSection } from '@/sections/BookingSection';
 import { ServicesListSection } from '@/sections/ServicesListSection';
 import { TestimonialsSection } from '@/sections/TestimonialsSection';
-import { FinalCTASection } from '@/sections/FinalCTASection';
 import { ContactSection } from '@/sections/ContactSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
 function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [preselectedService, setPreselectedService] = useState('');
   const mainRef = useRef<HTMLElement>(null);
   const snapTriggerRef = useRef<ScrollTrigger | null>(null);
+
+  const handleBookClick = (serviceName?: string) => {
+    if (serviceName) {
+      setPreselectedService(serviceName);
+    } else {
+      setPreselectedService('');
+    }
+    setIsBookingOpen(true);
+  };
 
   useEffect(() => {
     // Wait for all ScrollTriggers to be created
@@ -103,19 +111,17 @@ function App() {
       <div className="grain-overlay" />
 
       {/* Navigation */}
-      <Navigation onBookClick={() => setIsBookingOpen(true)} />
+      <Navigation onBookClick={() => handleBookClick()} />
 
       {/* Main Content */}
       <main ref={mainRef} className="relative">
-        <HeroSection onBookClick={() => setIsBookingOpen(true)} />
+        <HeroSection onBookClick={() => handleBookClick()} />
         <StatementSection />
         <AboutSection />
-        <ServicesSection onBookClick={() => setIsBookingOpen(true)} />
+        <ServicesSection onBookClick={() => handleBookClick()} />
         <PortfolioSection />
-        <BookingSection onBookClick={() => setIsBookingOpen(true)} />
-        <ServicesListSection onBookClick={() => setIsBookingOpen(true)} />
+        <ServicesListSection onBookClick={handleBookClick} />
         <TestimonialsSection />
-        <FinalCTASection onBookClick={() => setIsBookingOpen(true)} />
         <ContactSection />
       </main>
 
@@ -123,6 +129,7 @@ function App() {
       <BookingModal
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
+        preselectedService={preselectedService}
       />
     </>
   );

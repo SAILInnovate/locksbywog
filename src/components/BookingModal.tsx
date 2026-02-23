@@ -22,9 +22,10 @@ import {
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preselectedService?: string;
 }
 
-export function BookingModal({ isOpen, onClose }: BookingModalProps) {
+export function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
   const [step, setStep] = useState<'form' | 'deposit' | 'success'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
@@ -32,11 +33,18 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     name: '',
     instagram: '',
     phone: '',
-    service: '',
+    service: preselectedService || '',
     date: '',
     time: '',
     notes: '',
   });
+
+  // Watch for preselectedService changes to auto-fill
+  useEffect(() => {
+    if (preselectedService) {
+      setFormData(prev => ({ ...prev, service: preselectedService }));
+    }
+  }, [preselectedService]);
 
   useEffect(() => {
     async function loadServices() {
@@ -91,7 +99,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       name: '',
       instagram: '',
       phone: '',
-      service: '',
+      service: preselectedService || '',
       date: '',
       time: '',
       notes: '',
