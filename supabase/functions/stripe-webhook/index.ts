@@ -6,7 +6,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
     apiVersion: "2023-10-16",
 });
 
-const cryptoProvider = Stripe.createCryptoProvider();
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 serve(async (req) => {
     // Only accept POST requests
@@ -66,7 +66,7 @@ serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ received: true }), { status: 200 });
-    } catch (err) {
+    } catch (err: any) {
         console.error(`Webhook Error: ${err.message}`);
         return new Response(JSON.stringify({ error: err.message }), { status: 400 });
     }
