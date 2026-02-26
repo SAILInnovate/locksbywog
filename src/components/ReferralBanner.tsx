@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Users, Copy, Check } from 'lucide-react';
+import { X, Users, Copy, Check } from 'lucide-react';
 
 interface ReferralBannerProps {
     onBookClick: () => void;
@@ -58,7 +58,7 @@ export function ReferralBanner({ onBookClick }: ReferralBannerProps) {
                 <div className="relative px-4 py-2.5 md:py-3 flex items-center justify-center gap-2 md:gap-4">
                     {/* Mobile: Compact */}
                     <div className="flex items-center gap-2 md:gap-3">
-                        <Sparkles size={16} className="text-acid-lime shrink-0 animate-pulse" />
+
 
                         <div className="flex items-center gap-1.5 md:gap-3 text-center">
                             <span className="text-off-white font-display font-bold text-[11px] md:text-sm uppercase tracking-wider">
@@ -161,7 +161,6 @@ export function ReferralShareWidget({ code }: ReferralShareProps) {
             {/* Code Display */}
             <div className="bg-off-white/5 border-2 border-dashed border-acid-lime/40 rounded-xl p-4 flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
-                    <Sparkles size={18} className="text-acid-lime" />
                     <span className="font-mono font-bold text-2xl md:text-3xl text-acid-lime tracking-[0.15em]">
                         {code}
                     </span>
@@ -169,8 +168,8 @@ export function ReferralShareWidget({ code }: ReferralShareProps) {
                 <button
                     onClick={handleCopy}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold uppercase transition-all ${copied
-                            ? 'bg-acid-lime text-near-black'
-                            : 'bg-off-white/10 text-off-white hover:bg-off-white/20'
+                        ? 'bg-acid-lime text-near-black'
+                        : 'bg-off-white/10 text-off-white hover:bg-off-white/20'
                         }`}
                 >
                     {copied ? <Check size={14} /> : <Copy size={14} />}

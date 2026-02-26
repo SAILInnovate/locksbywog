@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Tag, Sparkles } from 'lucide-react';
+import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Tag } from 'lucide-react';
 import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates, supabase, validateReferralCode, incrementReferralUsage, generateReferralCode } from '@/lib/supabase';
 import type { Service, ReferralValidation } from '@/lib/supabase';
 import {
@@ -601,7 +601,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                       {isValidatingPromo ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : (
-                        <Sparkles size={14} />
+                        <Tag size={14} />
                       )}
                       Apply
                     </button>
