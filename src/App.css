@@ -34,7 +34,7 @@ html {
 .sticker:hover,
 .sticker-lime:hover {
   transform: translateY(-2px) rotate(0deg) !important;
-  box-shadow: 0 22px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 22px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Custom scrollbar */
@@ -73,6 +73,7 @@ select:focus-visible {
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -81,7 +82,7 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  
+
   .section-pinned {
     height: auto;
     min-height: 100vh;
@@ -94,22 +95,22 @@ select:focus-visible {
     font-size: 2.5rem;
     line-height: 0.95;
   }
-  
+
   .heading-lg {
     font-size: 2rem;
     line-height: 0.95;
   }
-  
+
   .section-pinned {
     overflow-x: hidden;
   }
-  
+
   /* Adjust sticker positions on mobile */
   .sticker,
   .sticker-lime {
     padding: 0.75rem 1rem;
   }
-  
+
   .sticker span,
   .sticker-lime span {
     font-size: 1rem;
@@ -121,7 +122,7 @@ select:focus-visible {
   .heading-xl {
     font-size: 3.5rem;
   }
-  
+
   .heading-lg {
     font-size: 2.5rem;
   }
@@ -137,4 +138,19 @@ select:focus-visible {
   to {
     opacity: 1;
   }
+}
+
+/* Referral Banner Shimmer */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
 }

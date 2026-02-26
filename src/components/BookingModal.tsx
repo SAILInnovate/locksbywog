@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates, supabase } from '@/lib/supabase';
-import type { Service } from '@/lib/supabase';
+import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Tag, Sparkles } from 'lucide-react';
+import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates, supabase, validateReferralCode, incrementReferralUsage, generateReferralCode } from '@/lib/supabase';
+import type { Service, ReferralValidation } from '@/lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ReferralShareWidget } from '@/components/ReferralBanner';
 
 type Step = 'service' | 'datetime' | 'details' | 'deposit' | 'success';
 
@@ -40,7 +41,15 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     date: getMinDate(),
     time: '',
     notes: '',
+    promoCode: '',
   });
+
+  // Referral code state
+  const [promoValidation, setPromoValidation] = useState<ReferralValidation | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [generatedReferralCode, setGeneratedReferralCode] = useState('');
 
   useEffect(() => {
     async function loadServices() {
@@ -54,11 +63,17 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
   useEffect(() => {
     if (isOpen) {
+      // Check for referral code in URL
+      const params = new URLSearchParams(window.location.search);
+      const refCode = params.get('ref');
+      if (refCode) {
+        setFormData(prev => ({ ...prev, promoCode: refCode }));
+      }
+
       if (preselectedService) {
         setFormData(prev => ({ ...prev, service: preselectedService }));
-        setStep('datetime'); // Jump securely to datetime if we opened with a service
+        setStep('datetime');
       } else {
-        const params = new URLSearchParams(window.location.search);
         if (params.get('booking_success') === 'true') {
           setStep('success');
           window.history.replaceState({}, '', window.location.pathname);
@@ -91,6 +106,42 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     loadBlockedDates();
   }, [isOpen]);
 
+  // Validate promo code
+  const handleValidatePromo = async () => {
+    if (!formData.promoCode.trim()) {
+      setPromoError('Enter a code first');
+      return;
+    }
+
+    setIsValidatingPromo(true);
+    setPromoError('');
+
+    const result = await validateReferralCode(formData.promoCode);
+
+    if (!result) {
+      setPromoError('Code not found. Check and try again.');
+      setPromoValidation(null);
+      setPromoApplied(false);
+    } else if (!result.is_valid) {
+      setPromoError('This code has expired or reached its limit.');
+      setPromoValidation(null);
+      setPromoApplied(false);
+    } else {
+      setPromoValidation(result);
+      setPromoApplied(true);
+      setPromoError('');
+    }
+
+    setIsValidatingPromo(false);
+  };
+
+  const removePromo = () => {
+    setPromoValidation(null);
+    setPromoApplied(false);
+    setPromoError('');
+    setFormData(prev => ({ ...prev, promoCode: '' }));
+  };
+
   const handleDepositPayment = async () => {
     setIsSubmitting(true);
 
@@ -109,7 +160,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       return hour >= 22 || hour < 5;
     };
     const isLate = isLateNightTime(formData.time);
-    const estimatedPrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
+    const basePrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
+    const discount = promoApplied && promoValidation ? promoValidation.discount : 0;
+    const estimatedPrice = Math.max(basePrice - discount, 0);
 
     // Create booking
     const { data: bData, error } = await createBooking({
@@ -123,7 +176,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       deposit_paid: false,
       deposit_amount: 10,
       total_price: estimatedPrice,
-      notes: formData.notes,
+      notes: formData.notes + (promoApplied ? ` [PROMO CODE: ${formData.promoCode.toUpperCase()}]` : ''),
       status: 'pending',
     });
 
@@ -135,6 +188,17 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     }
 
     const bookingId = bData[0].id;
+
+    // Increment referral code usage if one was used
+    if (promoApplied && promoValidation) {
+      await incrementReferralUsage(promoValidation.code_id);
+    }
+
+    // Generate a referral code for this new booking
+    const newCode = await generateReferralCode(bookingId, formData.name, formData.email, formData.instagram);
+    if (newCode) {
+      setGeneratedReferralCode(newCode);
+    }
 
     if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
       setIsSubmitting(false);
@@ -195,9 +259,14 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       date: getMinDate(),
       time: '',
       notes: '',
+      promoCode: '',
     });
     setStep('service');
     setIsSubmitting(false);
+    setPromoValidation(null);
+    setPromoApplied(false);
+    setPromoError('');
+    setGeneratedReferralCode('');
   };
 
   const handleClose = () => {
@@ -225,7 +294,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
   const selectedServiceDetails = services.find(s => s.name === formData.service);
   const isLate = isLateNight(formData.time);
-  const estimatedPrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
+  const basePrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
+  const discount = promoApplied && promoValidation ? promoValidation.discount : 0;
+  const estimatedPrice = Math.max(basePrice - discount, 0);
 
   const isTimeSlotAvailable = (timeStart: string) => {
     if (!selectedServiceDetails || !formData.date) return true;
@@ -308,6 +379,14 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   </div>
                 </button>
               ))}
+
+              {/* Promo Code Hint */}
+              <div className="mt-2 pt-3 border-t border-black/5 text-center">
+                <p className="text-xs text-gray-400 font-display uppercase tracking-wider flex items-center justify-center gap-1.5">
+                  <Tag size={12} />
+                  Got a referral code? Enter it at checkout for <span className="text-money-green font-bold">£10 off</span>
+                </p>
+              </div>
             </div>
           )}
 
@@ -473,6 +552,68 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 />
               </div>
 
+              {/* PROMO CODE SECTION */}
+              <div className="pt-2 border-t-2 border-dashed border-black/10">
+                <Label htmlFor="promoCode" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider flex items-center gap-1.5">
+                  <Tag size={12} /> Referral / Promo Code
+                </Label>
+                {promoApplied && promoValidation ? (
+                  <div className="mt-2 bg-money-green/10 border-2 border-money-green/30 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-money-green rounded-full flex items-center justify-center shrink-0">
+                        <Check size={16} className="text-white" strokeWidth={3} />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-sm text-money-green uppercase">
+                          {formData.promoCode.toUpperCase()} applied!
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          £{promoValidation.discount} off your booking
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removePromo}
+                      className="text-xs text-gray-400 hover:text-red-500 underline transition-colors font-bold uppercase"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      id="promoCode"
+                      value={formData.promoCode}
+                      onChange={(e) => {
+                        setFormData({ ...formData, promoCode: e.target.value.toUpperCase() });
+                        setPromoError('');
+                      }}
+                      className="border-2 border-black/10 focus:border-near-black p-3 h-auto rounded-xl transition-colors bg-white font-mono font-bold text-base uppercase tracking-widest flex-1"
+                      placeholder="ENTER CODE"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleValidatePromo}
+                      disabled={isValidatingPromo || !formData.promoCode.trim()}
+                      className="bg-near-black text-acid-lime font-display font-bold text-xs uppercase px-4 py-3 rounded-xl hover:bg-near-black/80 disabled:opacity-40 transition-all shrink-0 flex items-center gap-1.5"
+                    >
+                      {isValidatingPromo ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={14} />
+                      )}
+                      Apply
+                    </button>
+                  </div>
+                )}
+                {promoError && (
+                  <p className="text-red-500 text-xs font-bold mt-2 flex items-center gap-1">
+                    ⚠ {promoError}
+                  </p>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-black uppercase py-7 text-lg hover:bg-acid-lime/80 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111]"
@@ -506,11 +647,34 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                       <span className="block text-[11px] font-normal text-gray-500 mt-0.5 leading-tight">(Full address & postcode<br />provided upon booking)</span>
                     </div>
                   </div>
+
+                  {/* Price breakdown */}
+                  <div className="flex justify-between border-b border-black/5 pb-2">
+                    <span className="text-gray-500 font-medium">Service Price</span>
+                    <span className="font-bold">£{basePrice}</span>
+                  </div>
+
+                  {promoApplied && promoValidation && (
+                    <div className="flex justify-between border-b border-black/5 pb-2">
+                      <span className="text-money-green font-bold flex items-center gap-1.5">
+                        <Tag size={14} /> Referral Discount
+                      </span>
+                      <span className="font-bold text-money-green">-£{promoValidation.discount}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between pt-1">
-                    <span className="text-gray-500 font-medium">Estimated Total Price</span>
+                    <span className="text-gray-500 font-medium">Estimated Total</span>
                     <div className="text-right">
                       <span className="font-bold text-lg">£{estimatedPrice}</span>
                       {isLate && <div className="block mt-1"><span className="text-[11px] text-money-green font-bold bg-acid-lime/20 px-2 py-0.5 rounded uppercase tracking-wider">Late Rate Applied</span></div>}
+                      {promoApplied && (
+                        <div className="block mt-1">
+                          <span className="text-[11px] text-money-green font-bold bg-money-green/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                            🔥 £{discount} Saved!
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -578,6 +742,11 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   })()}
                 </div>
               </div>
+
+              {/* REFERRAL CODE SHARE WIDGET */}
+              {generatedReferralCode && (
+                <ReferralShareWidget code={generatedReferralCode} />
+              )}
 
               <Button
                 onClick={handleClose}
