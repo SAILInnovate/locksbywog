@@ -98,7 +98,7 @@ export function ContactSection() {
             <div className="mt-12 flex justify-center">
               <img
                 src="/images/locksbywogggg.png"
-                alt="LocksByWog Logo"
+                alt="LocsByWog Logo"
                 className="w-32 h-auto opacity-80"
               />
             </div>
@@ -112,7 +112,7 @@ export function ContactSection() {
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <a href="/admin" className="text-sm text-near-black/60 text-center md:text-left hover:text-near-black/60 no-underline cursor-default">
-              © {new Date().getFullYear()} LocksByWog. All rights reserved.
+              © {new Date().getFullYear()} LocsByWog. All rights reserved.
             </a>
             <div className="flex gap-6 justify-center md:justify-start">
               <a

@@ -112,7 +112,7 @@ export function ReferralShareWidget({ code }: ReferralShareProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
-        const shareText = `Yo bro, use my code "${code}" on locksbywog.com and save £10 on your first booking! 🔥💈`;
+        const shareText = `Yo bro, use my code "${code}" on locsbywog.com and save £10 on your first booking! 🔥💈`;
         try {
             await navigator.clipboard.writeText(shareText);
             setCopied(true);
@@ -132,14 +132,14 @@ export function ReferralShareWidget({ code }: ReferralShareProps) {
 
     const handleShareWhatsApp = () => {
         const text = encodeURIComponent(
-            `Yo bro, use my code "${code}" on locksbywog.com and save £10 on your booking! 🔥💈 Book here: https://locksbywog.com`
+            `Yo bro, use my code "${code}" on locsbywog.com and save £10 on your booking! 🔥💈 Book here: https://locsbywog.com`
         );
         window.open(`https://wa.me/?text=${text}`, '_blank');
     };
 
     const handleShareSMS = () => {
         const text = encodeURIComponent(
-            `Use my code "${code}" on locksbywog.com and save £10! Book here: https://locksbywog.com`
+            `Use my code "${code}" on locsbywog.com and save £10! Book here: https://locsbywog.com`
         );
         window.open(`sms:?body=${text}`, '_blank');
     };

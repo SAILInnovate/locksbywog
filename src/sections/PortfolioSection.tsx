@@ -46,7 +46,7 @@ export function PortfolioSection({ onBookClick }: PortfolioSectionProps) {
               <div className="image-frame overflow-hidden h-full">
                 <img
                   src={src}
-                  alt={`Locks by Wog Portfolio ${index + 1}`}
+                  alt={`Locs by Wog Portfolio ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   style={{ aspectRatio: '4/5' }}
                   loading={index < 3 ? "eager" : "lazy"}

@@ -47,7 +47,7 @@ export function Navigation({ onBookClick }: NavigationProps) {
           >
             <img
               src="/images/locksbywogggg.png"
-              alt="LocksByWog Logo"
+              alt="LocsByWog Logo"
               className="h-10 md:h-12 w-auto object-contain"
             />
           </button>

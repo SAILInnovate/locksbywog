@@ -91,7 +91,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
       >
         <img
           src="/images/locksbywogggg.png"
-          alt="LocksByWog Logo"
+          alt="LocsByWog Logo"
           className="h-16 md:h-28 w-auto object-contain drop-shadow-[4px_4px_0_rgba(18,18,18,1)]"
         />
       </div>
@@ -104,7 +104,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
         <div className="image-frame overflow-hidden bg-off-white w-[90vw] md:w-[50vw] max-w-[500px]">
           <img
             src="/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg"
-            alt="Beautiful locs by LocksByWog"
+            alt="Beautiful locs by LocsByWog"
             className="w-full h-auto object-cover"
             style={{ aspectRatio: '4/5' }}
           />
