@@ -6,7 +6,6 @@ import './App.css';
 // Components
 import { Navigation } from '@/components/Navigation';
 import { BookingModal } from '@/components/BookingModal';
-import { ReferralBanner } from '@/components/ReferralBanner';
 
 // Sections
 import { PortfolioSection } from '@/sections/PortfolioSection';
@@ -63,9 +62,6 @@ function App() {
     <>
       {/* Grain Overlay */}
       <div className="grain-overlay" />
-
-      {/* Referral Deal Banner */}
-      <ReferralBanner onBookClick={() => handleBookClick()} />
 
       {/* Navigation - offset for banner */}
       <Navigation onBookClick={() => handleBookClick()} />

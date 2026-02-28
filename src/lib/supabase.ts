@@ -43,7 +43,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: '1',
     name: 'Knotless Braids',
     description: 'Lightweight, natural-looking, scalp-friendly braids that last for weeks.',
-    price_from: 55,
+    price_from: 45,
     duration: '3-5 hours',
     duration_minutes: 240,
   },
@@ -51,7 +51,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: '2',
     name: 'Locs & Retwists',
     description: 'Neat parts, clean finish, healthy edges. Keep your locs looking fresh.',
-    price_from: 45,
+    price_from: 35,
     duration: '2-4 hours',
     duration_minutes: 180,
   },
@@ -59,7 +59,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: '3',
     name: "Kids' Styles",
     description: 'Quick, gentle, long-lasting styles for the little ones.',
-    price_from: 35,
+    price_from: 25,
     duration: '1-3 hours',
     duration_minutes: 120,
   },
@@ -67,7 +67,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: '4',
     name: 'Box Braids',
     description: 'Classic protective style with clean parts and professional finish.',
-    price_from: 60,
+    price_from: 50,
     duration: '4-6 hours',
     duration_minutes: 300,
   },
@@ -75,7 +75,7 @@ const FALLBACK_SERVICES: Service[] = [
     id: '5',
     name: 'Cornrows',
     description: 'Sleek, stylish cornrows for any occasion.',
-    price_from: 40,
+    price_from: 30,
     duration: '1-2 hours',
     duration_minutes: 90,
   },
@@ -266,51 +266,13 @@ export interface ReferralValidation {
 
 // Validate a referral/promo code
 export async function validateReferralCode(code: string): Promise<ReferralValidation | null> {
-  if (!supabaseUrl || !supabaseKey || !code.trim()) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('referral_codes')
-      .select('id, code, owner_name, discount_amount, is_active, times_used, max_uses')
-      .ilike('code', code.trim())
-      .single();
-
-    if (error || !data) return null;
-
-    const isValid = data.is_active && (data.max_uses === 0 || data.times_used < data.max_uses);
-
-    return {
-      is_valid: isValid,
-      discount: isValid ? Number(data.discount_amount) : 0,
-      owner: data.owner_name || '',
-      code_id: data.id,
-    };
-  } catch (err) {
-    console.error('Error validating referral code:', err);
-    return null;
-  }
+  // Referral system disabled
+  return null;
 }
 
 // Increment the usage count of a referral code
 export async function incrementReferralUsage(codeId: string) {
-  if (!supabaseUrl || !supabaseKey) return;
-
-  try {
-    const { data } = await supabase
-      .from('referral_codes')
-      .select('times_used')
-      .eq('id', codeId)
-      .single();
-
-    if (data) {
-      await supabase
-        .from('referral_codes')
-        .update({ times_used: (data.times_used || 0) + 1 })
-        .eq('id', codeId);
-    }
-  } catch (err) {
-    console.error('Error incrementing referral usage:', err);
-  }
+  // Referral system disabled
 }
 
 // Generate a referral code for a completed booking
@@ -320,51 +282,6 @@ export async function generateReferralCode(
   email: string,
   instagram: string
 ): Promise<string | null> {
-  if (!supabaseUrl || !supabaseKey) return null;
-
-  try {
-    const cleanName = name.replace(/[^a-zA-Z]/g, '').toUpperCase();
-    const prefix = cleanName.substring(0, 3) || 'LOC';
-    let code = '';
-    let exists = true;
-
-    while (exists) {
-      const suffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-      code = `${prefix}${suffix}`;
-      const { data } = await supabase
-        .from('referral_codes')
-        .select('id')
-        .eq('code', code)
-        .maybeSingle();
-      exists = !!data;
-    }
-
-    const { error } = await supabase
-      .from('referral_codes')
-      .insert([{
-        code,
-        source_booking_id: bookingId,
-        owner_name: name,
-        owner_email: email,
-        owner_instagram: instagram,
-        discount_amount: 10,
-        max_uses: 0,
-        is_active: true,
-      }]);
-
-    if (error) {
-      console.error('Error creating referral code:', error);
-      return null;
-    }
-
-    await supabase
-      .from('bookings')
-      .update({ referral_code_generated: code })
-      .eq('id', bookingId);
-
-    return code;
-  } catch (err) {
-    console.error('Error generating referral code:', err);
-    return null;
-  }
+  // Referral system disabled
+  return null;
 }
