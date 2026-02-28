@@ -265,22 +265,22 @@ export interface ReferralValidation {
 }
 
 // Validate a referral/promo code
-export async function validateReferralCode(code: string): Promise<ReferralValidation | null> {
+export async function validateReferralCode(_code: string): Promise<ReferralValidation | null> {
   // Referral system disabled
   return null;
 }
 
 // Increment the usage count of a referral code
-export async function incrementReferralUsage(codeId: string) {
+export async function incrementReferralUsage(_codeId: string) {
   // Referral system disabled
 }
 
 // Generate a referral code for a completed booking
 export async function generateReferralCode(
-  bookingId: string,
-  name: string,
-  email: string,
-  instagram: string
+  _bookingId: string,
+  _name: string,
+  _email: string,
+  _instagram: string
 ): Promise<string | null> {
   // Referral system disabled
   return null;
