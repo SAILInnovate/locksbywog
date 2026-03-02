@@ -18,9 +18,9 @@ serve(async (req) => {
     }
 
     try {
-        const { booking_id, name, email, return_url, service_name } = await req.json();
+        const { booking_id, name, email, return_url, service_name, total_price } = await req.json();
 
-        if (!booking_id || !return_url) {
+        if (!booking_id || !return_url || !total_price) {
             throw new Error("Missing required parameters");
         }
 
@@ -31,10 +31,10 @@ serve(async (req) => {
                     price_data: {
                         currency: "gbp",
                         product_data: {
-                            name: `£10 Deposit - ${service_name || "Locks By Wog Booking"}`,
-                            description: "Non-refundable deposit to secure your slot.",
+                            name: `${service_name || "Locks By Wog Booking"}`,
+                            description: "Full payment to secure your slot.",
                         },
-                        unit_amount: 1000, // £10.00 in pence
+                        unit_amount: Math.round(Number(total_price) * 100), // convert to pence
                     },
                     quantity: 1,
                 },
@@ -53,7 +53,7 @@ serve(async (req) => {
             },
             status: 200,
         });
-    } catch (error) {
+    } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), {
             headers: {
                 "Content-Type": "application/json",
