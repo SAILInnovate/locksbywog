@@ -109,7 +109,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       return hour >= 22 || hour < 5;
     };
     const isLate = isLateNightTime(formData.time);
-    const estimatedPrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
+    const basePrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
+    const stripeFee = parseFloat(((basePrice * 0.015) + 0.20).toFixed(2));
+    const totalWithFee = parseFloat((basePrice + stripeFee).toFixed(2));
 
     // Create booking
     const { data: bData, error } = await createBooking({
@@ -121,8 +123,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       start_datetime: startDateTime.toISOString(),
       end_datetime: endDateTime.toISOString(),
       deposit_paid: false,
-      deposit_amount: estimatedPrice,
-      total_price: estimatedPrice,
+      deposit_amount: totalWithFee,
+      total_price: totalWithFee,
       notes: formData.notes,
       status: 'pending',
     });
@@ -148,7 +150,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         service: selectedServiceDetails.name,
         date: formData.date,
         time: formData.time,
-        total_price: estimatedPrice.toString()
+        total_price: totalWithFee.toString()
       }).toString();
 
       const { data: functionData, error: functionError } = await supabase.functions.invoke('stripe-checkout', {
@@ -157,7 +159,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
           name: formData.name,
           email: formData.email,
           service_name: selectedServiceDetails.name,
-          total_price: estimatedPrice,
+          total_price: totalWithFee,
           return_url: `${window.location.origin}?${successParams}`
         }
       });
@@ -174,7 +176,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         service: selectedServiceDetails.name,
         date: formData.date,
         time: formData.time,
-        total_price: estimatedPrice
+        total_price: totalWithFee
       }));
 
       // Redirect to Stripe checkout url generated
@@ -227,7 +229,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const selectedServiceDetails = services.find(s => s.name === formData.service);
   const isLate = isLateNight(formData.time);
   const basePrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
-  const estimatedPrice = basePrice;
+  const stripeFee = parseFloat(((basePrice * 0.015) + 0.20).toFixed(2));
+  const totalWithFee = parseFloat((basePrice + stripeFee).toFixed(2));
 
   const isTimeSlotAvailable = (timeStart: string) => {
     if (!selectedServiceDetails || !formData.date) return true;
@@ -512,13 +515,18 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   {/* Price breakdown */}
                   <div className="flex justify-between border-b border-black/5 pb-2">
                     <span className="text-gray-500 font-medium">Service Price</span>
-                    <span className="font-bold">£{basePrice}</span>
+                    <span className="font-bold">£{basePrice.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-black/5 pb-2">
+                    <span className="text-gray-500 font-medium flex items-center gap-1">Processing Fee</span>
+                    <span className="font-bold">£{stripeFee.toFixed(2)}</span>
                   </div>
 
                   <div className="flex justify-between pt-1">
-                    <span className="text-gray-500 font-medium">Estimated Total</span>
+                    <span className="text-gray-500 font-medium text-lg">Total Due</span>
                     <div className="text-right">
-                      <span className="font-bold text-lg">£{estimatedPrice}</span>
+                      <span className="font-bold text-lg text-near-black">£{totalWithFee.toFixed(2)}</span>
                       {isLate && <div className="block mt-1"><span className="text-[11px] text-money-green font-bold bg-acid-lime/20 px-2 py-0.5 rounded uppercase tracking-wider">Late Rate Applied</span></div>}
                     </div>
                   </div>
@@ -527,8 +535,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
               <div className="text-center bg-black-[0.03] border-2 border-dashed border-black/10 p-6 rounded-2xl">
                 <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Total Due Now</p>
-                <p className="text-6xl font-display font-black tracking-tight text-near-black">£{estimatedPrice}</p>
-                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Pay securely via card to finalize and secure this exact slot.</p>
+                <p className="text-6xl font-display font-black tracking-tight text-near-black">£{totalWithFee.toFixed(2)}</p>
+                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Pay securely via card to finalize and secure this exact slot (Includes processing fee of £{stripeFee.toFixed(2)}).</p>
               </div>
 
               <Button
