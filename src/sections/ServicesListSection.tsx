@@ -187,7 +187,7 @@ export function ServicesListSection({ onBookClick }: ServicesListSectionProps) {
             Book Your Appointment
           </button>
           <p className="micro-label text-off-white/60 mt-4">
-            Full payment required to secure your slot
+            Full card payment required to secure your slot
           </p>
         </div>
       </div>

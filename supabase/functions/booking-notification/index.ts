@@ -22,18 +22,18 @@ serve(async (req) => {
       });
     }
 
-    // Only send notification if deposit is paid OR if it's a specific bypassed booking
+    // Only send notification if deposit/payment is paid OR if it's a specific bypassed booking
     if (!booking.deposit_paid) {
-      console.log("Deposit not paid yet, skipping email notification.");
-      return new Response(JSON.stringify({ message: "Deposit not paid yet, skipping email." }), {
+      console.log("Payment not made yet, skipping email notification.");
+      return new Response(JSON.stringify({ message: "Payment not made yet, skipping email." }), {
         headers: { "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    // Prevent duplicate emails on subsequent updates if deposit was already paid
+    // Prevent duplicate emails on subsequent updates if deposit/payment was already paid
     if (payload.old_record && payload.old_record.deposit_paid) {
-      console.log("Deposit was already paid previously, skipping email to prevent duplicates.");
+      console.log("Payment was already made previously, skipping email to prevent duplicates.");
       return new Response(JSON.stringify({ message: "Already paid previously, skipping." }), {
         headers: { "Content-Type": "application/json" },
         status: 200,
@@ -75,7 +75,7 @@ serve(async (req) => {
         <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Alright Wog, you've got a new booking! &nbsp;🎉</h2>
         
         <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-          Someone's just locked in a slot and paid their deposit. Here are the full details below so you can hit them up straight away.
+          Someone's just locked in a slot and paid. Here are the full details below so you can hit them up straight away.
         </p>
 
         <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
@@ -85,7 +85,7 @@ serve(async (req) => {
             <li><strong>Phone:</strong> ${booking.phone}</li>
             <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Date:</strong> ${dateFormatted}</li>
             <li><strong>Time:</strong> ${timeFormatted}</li>
-            <li><strong>Deposit Paid:</strong> £${booking.deposit_amount}</li>
+            <li><strong>Amount Paid:</strong> £${booking.deposit_amount}</li>
           </ul>
           
           ${booking.notes ? `
@@ -115,8 +115,8 @@ serve(async (req) => {
     `;
 
     const wogData = await resend.emails.send({
-      from: "LocksByWog Bookings <bookings@blocq.co.uk>",
-      to: ["lovelymorales2110@gmail.com"],
+      from: "LocsByWog Bookings <bookings@blocq.co.uk>",
+      to: ["locksbywog2110@gmail.com"],
       subject: `🚨 NEW BOOKING 🚨: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
       html: emailHtml,
     });
@@ -129,9 +129,8 @@ serve(async (req) => {
         
         <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Your booking is confirmed! &nbsp;🎉</h2>
         
-        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
           Hey ${booking.name},<br/><br/>
-          Your £10 deposit has been successfully paid, and your slot is officially locked in.
+          Your payment has been successfully processed, and your slot is officially locked in.
         </p>
 
         <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
@@ -143,11 +142,6 @@ serve(async (req) => {
           </ul>
         </div>
         
-        <div style="background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-          <p style="margin: 0; font-size: 16px; color: #2e7d32;">
-            <strong>Payment Due on the Day:</strong><br/>
-            Please bring <strong>£${remainingBalance > 0 ? remainingBalance.toFixed(2) : "0.00"} in cash</strong> to pay the remaining balance of your service.
-          </p>
         </div>
 
         <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
@@ -156,15 +150,15 @@ serve(async (req) => {
         
         <p style="font-size: 15px; font-weight: bold;">
           See you soon,<br/>
-          Locks By Wog
+          Locs By Wog
         </p>
       </div>
     `;
 
     const customerData = await resend.emails.send({
-      from: "LocksByWog <bookings@blocq.co.uk>",
+      from: "LocsByWog <bookings@blocq.co.uk>",
       to: [booking.email],
-      subject: `Booking Confirmed - Locks By Wog`,
+      subject: `Booking Confirmed - Locs By Wog`,
       html: customerEmailHtml,
     });
 

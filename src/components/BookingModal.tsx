@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Step = 'service' | 'datetime' | 'details' | 'deposit' | 'success';
+type Step = 'service' | 'datetime' | 'details' | 'payment' | 'success';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -209,7 +209,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const handleBack = () => {
     if (step === 'datetime') setStep('service');
     else if (step === 'details') setStep('datetime');
-    else if (step === 'deposit') setStep('details');
+    else if (step === 'payment') setStep('details');
   };
 
   const timeSlots = [
@@ -272,7 +272,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
             {step === 'service' && 'Select Service'}
             {step === 'datetime' && 'Date & Time'}
             {step === 'details' && 'Your Details'}
-            {step === 'deposit' && 'Secure Booking'}
+            {step === 'payment' && 'Secure Booking'}
             {step === 'success' && 'Confirmed!'}
           </DialogTitle>
         </DialogHeader>
@@ -410,7 +410,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
           {step === 'details' && (
             <form onSubmit={(e) => {
               e.preventDefault();
-              setStep('deposit');
+              setStep('payment');
             }} className="space-y-5 animation-fade-in">
 
               <div>
@@ -479,13 +479,13 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 type="submit"
                 className="w-full bg-acid-lime text-near-black border-2 border-near-black font-display font-black uppercase py-7 text-lg hover:bg-acid-lime/80 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#111] hover:shadow-[2px_2px_0px_#111]"
               >
-                Review & Secure Booking
+                Review & Pay
               </Button>
             </form>
           )}
 
-          {/* STEP 4: DEPOSIT */}
-          {step === 'deposit' && (
+          {/* STEP 4: PAYMENT */}
+          {step === 'payment' && (
             <div className="space-y-6 animation-fade-in">
               <div className="bg-money-green/10 p-5 rounded-2xl border border-money-green/20">
                 <h3 className="font-display font-black uppercase text-lg mb-4 flex items-center gap-2">
@@ -526,9 +526,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
               </div>
 
               <div className="text-center bg-black-[0.03] border-2 border-dashed border-black/10 p-6 rounded-2xl">
-                <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Due Today</p>
+                <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Total Due Now</p>
                 <p className="text-6xl font-display font-black tracking-tight text-near-black">£{estimatedPrice}</p>
-                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Pay the full amount via card to secure this exact slot.</p>
+                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Pay securely via card to finalize and secure this exact slot.</p>
               </div>
 
               <Button
@@ -542,7 +542,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                     Connecting...
                   </>
                 ) : (
-                  'Pay Securely & Finish'
+                  'Pay & Finish'
                 )}
               </Button>
             </div>
@@ -570,8 +570,6 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   <p><span className="text-gray-500 inline-block w-20">Time:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('time') || formData.time}</span></p>
                   <p><span className="text-gray-500 inline-block w-20">Where:</span> <span className="font-bold">Salford (M6 6DQ)</span></p>
                 </div>
-
-
               </div>
 
               <Button

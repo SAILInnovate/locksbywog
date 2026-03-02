@@ -53,7 +53,7 @@ serve(async (req) => {
             },
             status: 200,
         });
-    } catch (error: any) {
+    } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), {
             headers: {
                 "Content-Type": "application/json",
