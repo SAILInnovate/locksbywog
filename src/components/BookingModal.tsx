@@ -110,8 +110,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     };
     const isLate = isLateNightTime(formData.time);
     const basePrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
-    const stripeFee = parseFloat(((basePrice * 0.015) + 0.20).toFixed(2));
-    const totalWithFee = parseFloat((basePrice + stripeFee).toFixed(2));
+    const stripeFee = Math.round((basePrice * 0.015) + 0.20);
+    const totalWithFee = basePrice + stripeFee;
 
     // Create booking
     const { data: bData, error } = await createBooking({
@@ -229,8 +229,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const selectedServiceDetails = services.find(s => s.name === formData.service);
   const isLate = isLateNight(formData.time);
   const basePrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
-  const stripeFee = parseFloat(((basePrice * 0.015) + 0.20).toFixed(2));
-  const totalWithFee = parseFloat((basePrice + stripeFee).toFixed(2));
+  const stripeFee = Math.round((basePrice * 0.015) + 0.20);
+  const totalWithFee = basePrice + stripeFee;
 
   const isTimeSlotAvailable = (timeStart: string) => {
     if (!selectedServiceDetails || !formData.date) return true;
