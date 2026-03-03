@@ -79,6 +79,14 @@ const FALLBACK_SERVICES: Service[] = [
     duration: '1-2 hours',
     duration_minutes: 90,
   },
+  {
+    id: '6',
+    name: 'Additional £1',
+    description: 'An extra charge or standalone £1 item.',
+    price_from: 1,
+    duration: '15 mins',
+    duration_minutes: 15,
+  },
 ];
 
 export async function getServices(): Promise<Service[]> {
@@ -103,7 +111,7 @@ export async function getServices(): Promise<Service[]> {
       name: s.name,
       description: s.description,
       price_from: Number(s.base_price),
-      duration: `${s.duration_minutes / 60} hours`,
+      duration: s.duration_minutes < 60 ? `${s.duration_minutes} mins` : `${s.duration_minutes / 60} hours`,
       duration_minutes: Number(s.duration_minutes),
     }));
   } catch (err) {

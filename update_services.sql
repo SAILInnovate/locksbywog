@@ -22,3 +22,6 @@ WHERE NOT EXISTS (SELECT 1 FROM services WHERE name = '6+ Barrel twists');
 INSERT INTO services (name, description, base_price, deposit_required, duration_minutes)
 SELECT '2-4 barrel twists', 'Thick, bold barrel twists perfect for a durable style.', 35.00, 10.00, 150
 WHERE NOT EXISTS (SELECT 1 FROM services WHERE name = '2-4 barrel twists');
+INSERT INTO services (name, description, base_price, deposit_required, duration_minutes)
+SELECT 'Additional £1', 'An extra charge or standalone £1 item.', 1.00, 1.00, 15
+WHERE NOT EXISTS (SELECT 1 FROM services WHERE name = 'Additional £1');
