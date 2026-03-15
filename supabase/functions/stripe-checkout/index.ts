@@ -18,27 +18,54 @@ serve(async (req) => {
     }
 
     try {
-        const { booking_id, name, email, return_url, service_name, total_price } = await req.json();
+        const { booking_id, name, email, return_url, service_name, total_price, deposit_amount, processing_fee } = await req.json();
 
-        if (!booking_id || !return_url || !total_price) {
+        if (!booking_id || !return_url) {
             throw new Error("Missing required parameters");
+        }
+
+        const line_items = [];
+        
+        if (deposit_amount !== undefined && processing_fee !== undefined) {
+          line_items.push({
+            price_data: {
+              currency: "gbp",
+              product_data: {
+                name: `Booking Deposit - ${service_name || "Service"}`,
+                description: "Non-refundable deposit to secure your slot. This amount will be deducted from your total service price.",
+              },
+              unit_amount: Math.round(Number(deposit_amount) * 100),
+            },
+            quantity: 1,
+          });
+          line_items.push({
+            price_data: {
+              currency: "gbp",
+              product_data: {
+                name: "Processing Fee",
+                description: "Non-refundable booking processing fee.",
+              },
+              unit_amount: Math.round(Number(processing_fee) * 100),
+            },
+            quantity: 1,
+          });
+        } else {
+          line_items.push({
+            price_data: {
+              currency: "gbp",
+              product_data: {
+                name: `${service_name || "Locks By Wog Booking"}`,
+                description: "Payment to secure your slot.",
+              },
+              unit_amount: Math.round(Number(total_price) * 100),
+            },
+            quantity: 1,
+          });
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
-            line_items: [
-                {
-                    price_data: {
-                        currency: "gbp",
-                        product_data: {
-                            name: `${service_name || "Locks By Wog Booking"}`,
-                            description: "Full payment to secure your slot.",
-                        },
-                        unit_amount: Math.round(Number(total_price) * 100), // convert to pence
-                    },
-                    quantity: 1,
-                },
-            ],
+            line_items,
             mode: "payment",
             success_url: `${return_url}?booking_success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${return_url}?booking_cancelled=true`,

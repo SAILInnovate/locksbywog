@@ -122,7 +122,8 @@ serve(async (req) => {
                     <li><strong>Phone:</strong> ${booking.phone}</li>
                     <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Date:</strong> ${dateFormatted}</li>
                     <li><strong>Time:</strong> ${timeFormatted}</li>
-                    <li><strong>Deposit Paid:</strong> £${booking.deposit_amount}</li>
+                    <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
+                    <li><strong>Balance Due:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
                   </ul>
                   
                   ${booking.notes ? `

@@ -85,7 +85,8 @@ serve(async (req) => {
             <li><strong>Phone:</strong> ${booking.phone}</li>
             <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Date:</strong> ${dateFormatted}</li>
             <li><strong>Time:</strong> ${timeFormatted}</li>
-            <li><strong>Amount Paid:</strong> £${booking.deposit_amount}</li>
+            <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
+            <li><strong>Balance Due:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
           </ul>
           
           ${booking.notes ? `
@@ -139,7 +140,13 @@ serve(async (req) => {
             <li><strong>Date:</strong> ${dateFormatted}</li>
             <li><strong>Time:</strong> ${timeFormatted}</li>
             <li><strong>Location:</strong> Salford, Manchester (M6 6DQ)</li>
+            <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Total Price:</strong> £${Number(booking.total_price).toFixed(2)}</li>
+            <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
+            <li style="font-size: 16px; margin-top: 5px; color: #0B6B4F;"><strong>Remaining Balance:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
           </ul>
+          <p style="font-size: 12px; color: #666; margin-top: 15px; font-style: italic;">
+            * Remaining balance is to be paid on the day of your appointment.
+          </p>
         </div>
         
         </div>
