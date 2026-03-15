@@ -544,6 +544,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
               <div className="text-center bg-black-[0.03] border-2 border-dashed border-black/10 p-6 rounded-2xl">
                 <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Total Due Now</p>
                 <p className="text-6xl font-display font-black tracking-tight text-near-black">£{totalNow.toFixed(2)}</p>
+                <p className="text-[11px] text-gray-400 mt-3 italic leading-tight uppercase font-bold tracking-wider">
+                  ⚠️ Note: There is a £10 fee for late arrivals (over 15 mins).
+                </p>
                 <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Secure your slot with a non-refundable £{depositAmount} deposit (+£{processingFee} fee). The £{depositAmount} is deducted from your final bill.</p>
               </div>
 

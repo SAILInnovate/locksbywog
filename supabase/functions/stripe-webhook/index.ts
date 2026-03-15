@@ -199,8 +199,8 @@ serve(async (req) => {
                   </p>
                 </div>
         
-                <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
-                  I'll be in touch with you directly on Instagram (@${cleanIG}) or via text to confirm the exact address before your appointment.
+                <p style="font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                  <strong>Late Arrival Policy:</strong> Please arrive on time. There is a <strong>£10 late fee</strong> if you are more than 15 minutes late to your appointment.
                 </p>
                 
                 <p style="font-size: 15px; font-weight: bold;">
