@@ -102,6 +102,14 @@ serve(async (req) => {
         } catch (e) { }
       }
 
+      // Detect if it's a late night booking (10pm - 5am)
+      let isLate = false;
+      if (booking.start_datetime) {
+        const d = new Date(booking.start_datetime);
+        const hour = d.getUTCHours(); // Using UTC to be safe, but local hour check might be needed depending on DB storage
+        isLate = hour >= 22 || hour < 5;
+      }
+
       const cleanIG = (booking.instagram || "").replace('@', '');
       const igLink = `https://instagram.com/${cleanIG}`;
       const cleanPhone = (booking.phone || "").replace(/[^0-9+]/g, '');
@@ -109,7 +117,7 @@ serve(async (req) => {
       const wogEmailHtml = `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
                 
-                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Alright Wog, you've got a new booking! &nbsp;🎉</h2>
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Alright Wog, you've got a new booking! &nbsp;🎉 ${isLate ? '<span style="background-color: #c3ff00; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; vertical-align: middle; margin-left: 10px;">LATE RATE</span>' : ''}</h2>
                 
                 <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
                   Someone's just locked in a slot and paid their deposit. Here are the full details below so you can hit them up straight away.
@@ -123,7 +131,7 @@ serve(async (req) => {
                     <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Date:</strong> ${dateFormatted}</li>
                     <li><strong>Time:</strong> ${timeFormatted}</li>
                     <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
-                    <li><strong>Balance Due:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
+                    <li><strong>Balance Due:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)} ${isLate ? '<span style="color: #0B6B4F; font-weight: bold;">(Includes Late Rate)</span>' : ''}</li>
                   </ul>
                   
                   ${booking.notes ? `
@@ -153,13 +161,67 @@ serve(async (req) => {
             `;
 
       await resend.emails.send({
-        from: "LocksByWog Bookings <bookings@blocq.co.uk>",
+        from: "LocksByWog <bookings@blocq.co.uk>",
         to: ["locksbywog2110@gmail.com"],
-        subject: `🚨 NEW BOOKING 🚨: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
+        subject: `${isLate ? '🌙 ' : ''}NEW BOOKING: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
         html: wogEmailHtml,
       });
 
-      console.log(`Successfully sent notification email for booking ${bookingId}`);
+      console.log(`Successfully sent stylist notification email for booking ${bookingId}`);
+
+      // --- SEND EMAIL TO CUSTOMER ---
+      const depositAmount = Number(booking.deposit_amount);
+      const totalPrice = Number(booking.total_price);
+      const remainingBalance = totalPrice - depositAmount;
+
+      const customerEmailHtml = `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
+                
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Your booking is confirmed! &nbsp;🎉</h2>
+                
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                  Hey ${booking.name},<br/><br/>
+                  Your payment has been successfully processed, and your slot is officially locked in.
+                </p>
+        
+                <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                  <h3 style="margin-top:0; margin-bottom: 15px;">Your Booking Details:</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; line-height: 1.8;">
+                    <li><strong>Date:</strong> ${dateFormatted}</li>
+                    <li><strong>Time:</strong> ${timeFormatted}</li>
+                    <li><strong>Location:</strong> Salford, Manchester (M6 6DQ)</li>
+                    <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Total Price:</strong> £${totalPrice.toFixed(2)} ${isLate ? '<span style="font-size: 11px; background-color: #c3ff00; color: #000; padding: 1px 6px; border-radius: 3px; font-weight: bold; margin-left: 5px;">LATE RATE APPLIED</span>' : ''}</li>
+                    <li><strong>Amount Paid (Deposit):</strong> £${depositAmount.toFixed(2)}</li>
+                    <li style="font-size: 16px; margin-top: 5px; color: #0B6B4F;"><strong>Remaining Balance:</strong> £${remainingBalance.toFixed(2)}</li>
+                  </ul>
+                  <p style="font-size: 12px; color: #666; margin-top: 15px; font-style: italic;">
+                    * The remaining balance is to be paid on the day of your appointment.
+                  </p>
+                </div>
+        
+                <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
+                  I'll be in touch with you directly on Instagram (@${cleanIG}) or via text to confirm the exact address before your appointment.
+                </p>
+                
+                <p style="font-size: 15px; font-weight: bold;">
+                  See you soon,<br/>
+                  Locks By Wog
+                </p>
+                
+                <p style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;">
+                  This is a non-refundable booking deposit. If you need to reschedule, please contact us at least 48 hours in advance.
+                </p>
+              </div>
+            `;
+
+      await resend.emails.send({
+        from: "LocksByWog <bookings@blocq.co.uk>",
+        to: [booking.email],
+        subject: `Booking Confirmed - Locks By Wog`,
+        html: customerEmailHtml,
+      });
+
+      console.log(`Successfully sent customer confirmation email for booking ${bookingId}`);
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });

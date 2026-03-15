@@ -69,107 +69,14 @@ serve(async (req) => {
     // Make the phone link clean for tel:
     const cleanPhone = (booking.phone || "").replace(/[^0-9+]/g, '');
 
-    const emailHtml = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
-        
-        <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Alright Wog, you've got a new booking! &nbsp;🎉</h2>
-        
-        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-          Someone's just locked in a slot and paid. Here are the full details below so you can hit them up straight away.
-        </p>
+    // --- EMAIL LOGIC MOVED TO STRIPE WEBHOOK ---
+    // Both stylist and customer emails are now handled directly by the stripe-webhook function
+    // to ensure reliability and avoid duplicate notifications.
 
-        <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; line-height: 1.8;">
-            <li><strong>Customer:</strong> ${booking.name}</li>
-            <li><strong>Instagram:</strong> @${cleanIG}</li>
-            <li><strong>Phone:</strong> ${booking.phone}</li>
-            <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Date:</strong> ${dateFormatted}</li>
-            <li><strong>Time:</strong> ${timeFormatted}</li>
-            <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
-            <li><strong>Balance Due:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
-          </ul>
-          
-          ${booking.notes ? `
-          <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 14px;">
-            <strong>Notes from customer:</strong><br/>
-            <span style="color: #444; font-style: italic;">${booking.notes}</span>
-          </div>
-          ` : ''}
-        </div>
-
-        <h3 style="font-size: 18px; margin-bottom: 12px;">Get in touch right now:</h3>
-        
-        <div style="display: flex; gap: 12px; margin-bottom: 30px;">
-          <a href="${igLink}" style="background-color: #111111; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">
-            DM on Instagram
-          </a>
-          
-          <a href="tel:${cleanPhone}" style="background-color: #0B6B4F; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block; margin-left:10px;">
-             Call / Text
-          </a>
-        </div>
-
-        <p style="font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 15px;">
-          This is an automated notification from your LocksByWog booking system.
-        </p>
-      </div>
-    `;
-
-    const wogData = await resend.emails.send({
-      from: "LocsByWog Bookings <bookings@blocq.co.uk>",
-      to: ["locksbywog2110@gmail.com"],
-      subject: `🚨 NEW BOOKING 🚨: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
-      html: emailHtml,
-    });
-
-    // --- SEND EMAIL TO CUSTOMER ---
-    const remainingBalance = booking.total_price - booking.deposit_amount;
-
-    const customerEmailHtml = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; max-width: 600px; margin: 0 auto; padding: 20px; color: #111111;">
-        
-        <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">Your booking is confirmed! &nbsp;🎉</h2>
-        
-          Hey ${booking.name},<br/><br/>
-          Your payment has been successfully processed, and your slot is officially locked in.
-        </p>
-
-        <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <h3 style="margin-top:0; margin-bottom: 15px;">Your Booking Details:</h3>
-          <ul style="list-style: none; padding: 0; margin: 0; font-size: 15px; line-height: 1.8;">
-            <li><strong>Date:</strong> ${dateFormatted}</li>
-            <li><strong>Time:</strong> ${timeFormatted}</li>
-            <li><strong>Location:</strong> Salford, Manchester (M6 6DQ)</li>
-            <li style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;"><strong>Total Price:</strong> £${Number(booking.total_price).toFixed(2)}</li>
-            <li><strong>Deposit Paid:</strong> £${Number(booking.deposit_amount).toFixed(2)}</li>
-            <li style="font-size: 16px; margin-top: 5px; color: #0B6B4F;"><strong>Remaining Balance:</strong> £${(Number(booking.total_price) - Number(booking.deposit_amount)).toFixed(2)}</li>
-          </ul>
-          <p style="font-size: 12px; color: #666; margin-top: 15px; font-style: italic;">
-            * Remaining balance is to be paid on the day of your appointment.
-          </p>
-        </div>
-        
-        </div>
-
-        <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
-          I'll be in touch with you directly on Instagram (@${cleanIG}) or via text to confirm the exact address before your appointment.
-        </p>
-        
-        <p style="font-size: 15px; font-weight: bold;">
-          See you soon,<br/>
-          Locs By Wog
-        </p>
-      </div>
-    `;
-
-    const customerData = await resend.emails.send({
-      from: "LocsByWog <bookings@blocq.co.uk>",
-      to: [booking.email],
-      subject: `Booking Confirmed - Locs By Wog`,
-      html: customerEmailHtml,
-    });
-
-    return new Response(JSON.stringify({ success: true, wogData, customerData }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: "Email logic moved to stripe-webhook. This function is now a placeholder." 
+    }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
