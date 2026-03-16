@@ -155,13 +155,13 @@ serve(async (req) => {
                 </div>
 
                 <p style="font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 15px;">
-                  This is an automated notification from your LocksByWog booking system.
+                  This is an automated notification from your LocsByWog booking system.
                 </p>
               </div>
             `;
 
       await resend.emails.send({
-        from: "LocksByWog <bookings@blocq.co.uk>",
+        from: "LocsByWog <bookings@blocq.co.uk>",
         to: ["locksbywog2110@gmail.com"],
         subject: `${isLate ? '🌙 ' : ''}NEW BOOKING: ${booking.name} on ${dateFormatted} at ${timeFormatted}`,
         html: wogEmailHtml,
@@ -205,19 +205,19 @@ serve(async (req) => {
                 
                 <p style="font-size: 15px; font-weight: bold;">
                   See you soon,<br/>
-                  Locks By Wog
+                  Locs By Wog
                 </p>
                 
                 <p style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;">
-                  This is a non-refundable booking deposit. If you need to reschedule, please contact us at least 48 hours in advance.
+                  This is a non-refundable booking deposit. If you need to reschedule, please contact us at least 24 hours in advance.
                 </p>
               </div>
             `;
 
       await resend.emails.send({
-        from: "LocksByWog <bookings@blocq.co.uk>",
+        from: "LocsByWog <bookings@blocq.co.uk>",
         to: [booking.email],
-        subject: `Booking Confirmed - Locks By Wog`,
+        subject: `Booking Confirmed - Locs By Wog`,
         html: customerEmailHtml,
       });
 

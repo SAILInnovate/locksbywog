@@ -21,7 +21,7 @@ interface BookingModalProps {
 }
 
 const getMinDate = () => {
-  const minDateConfig = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  const minDateConfig = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
   return minDateConfig.toISOString().split('T')[0];
 };
 
@@ -347,7 +347,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   />
                   {isInvalidDate && (
                     <p className="text-red-600 text-[11px] sm:text-xs font-bold mt-2 font-display uppercase tracking-wide">
-                      ⚠ Please select a date at least 2 days from now.
+                      ⚠ Please select a date at least 1 day from now.
                     </p>
                   )}
                 </div>
@@ -395,7 +395,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
               <Button
                 onClick={() => {
                   if (isInvalidDate) {
-                    alert("Please select a date at least 2 days from now.");
+                    alert("Please select a date at least 1 day from now.");
                     return;
                   }
                   if (!formData.date || !formData.time) {
