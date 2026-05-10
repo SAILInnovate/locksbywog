@@ -121,7 +121,7 @@ export function HeroSection({ onBookClick }: HeroSectionProps) {
           <span className="text-base md:text-xl">Book now</span>
         </button>
         <p className="micro-label text-off-white/80 mt-2 md:mt-3 text-center text-xs md:text-sm">
-          Greater Manchester<br className="md:hidden" /> · Mobile - I come to you!
+          Eccles, Salford<br className="md:hidden" /> · M30 7PL
         </p>
       </div>
 

@@ -28,6 +28,7 @@ const getMinDate = () => {
 export function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
   const [step, setStep] = useState<Step>('service');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>('deposit');
   const [services, setServices] = useState<Service[]>([]);
   const [bookedSlots, setBookedSlots] = useState<{ start_datetime: string, end_datetime: string }[]>([]);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
@@ -36,7 +37,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     email: '',
     instagram: '',
     phone: '',
-    address: '',
+
     service: '',
     date: getMinDate(),
     time: '',
@@ -111,9 +112,10 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     };
     const isLate = isLateNightTime(formData.time);
     const basePrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
-    const depositAmount = 10;
+    const isPayingFull = paymentOption === 'full';
+    const depositAmount = isPayingFull ? basePrice : 10;
     const processingFee = 1;
-    const totalNow = depositAmount + processingFee;
+    const totalNow = isPayingFull ? basePrice + processingFee : depositAmount + processingFee;
 
     // Create booking
     const { data: bData, error } = await createBooking({
@@ -127,7 +129,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       deposit_paid: false,
       deposit_amount: depositAmount,
       total_price: basePrice,
-      notes: `Address: ${formData.address}${formData.notes ? `\n\nNotes: ${formData.notes}` : ''}`,
+      notes: formData.notes || '',
       status: 'pending',
     });
 
@@ -155,16 +157,27 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         total_price: totalNow.toString()
       }).toString();
 
+      const checkoutBody = isPayingFull
+        ? {
+            booking_id: bookingId,
+            name: formData.name,
+            email: formData.email,
+            service_name: selectedServiceDetails.name,
+            total_price: basePrice + processingFee,
+            return_url: `${window.location.origin}?${successParams}`
+          }
+        : {
+            booking_id: bookingId,
+            name: formData.name,
+            email: formData.email,
+            service_name: selectedServiceDetails.name,
+            deposit_amount: depositAmount,
+            processing_fee: processingFee,
+            return_url: `${window.location.origin}?${successParams}`
+          };
+
       const { data: functionData, error: functionError } = await supabase.functions.invoke('stripe-checkout', {
-        body: {
-          booking_id: bookingId,
-          name: formData.name,
-          email: formData.email,
-          service_name: selectedServiceDetails.name,
-          deposit_amount: depositAmount,
-          processing_fee: processingFee,
-          return_url: `${window.location.origin}?${successParams}`
-        }
+        body: checkoutBody
       });
 
       if (functionError || !functionData?.url) {
@@ -197,7 +210,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       email: '',
       instagram: '',
       phone: '',
-      address: '',
+
       service: '',
       date: getMinDate(),
       time: '',
@@ -233,9 +246,9 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const selectedServiceDetails = services.find(s => s.name === formData.service);
   const isLate = isLateNight(formData.time);
   const basePrice = selectedServiceDetails ? (isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from) : 0;
-  const depositAmount = 10;
+  const depositAmount = paymentOption === 'full' ? basePrice : 10;
   const processingFee = 1;
-  const totalNow = depositAmount + processingFee;
+  const totalNow = paymentOption === 'full' ? basePrice + processingFee : depositAmount + processingFee;
 
   const isTimeSlotAvailable = (timeStart: string) => {
     if (!selectedServiceDetails || !formData.date) return true;
@@ -472,17 +485,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="address" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Your Address (I travel to you!) *</Label>
-                <textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full border-2 border-black/10 focus:border-near-black mt-1 p-4 rounded-xl min-h-[80px] resize-none focus:outline-none transition-colors bg-white font-medium text-base"
-                  placeholder="Full address including postcode"
-                  required
-                />
-              </div>
+
 
               <div>
                 <Label htmlFor="notes" className="font-display font-bold uppercase text-xs text-gray-500 tracking-wider">Any Note? (Optional)</Label>
@@ -524,8 +527,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   <div className="flex justify-between border-b border-black/5 pb-2 items-start">
                     <span className="text-gray-500 font-medium shrink-0">Location</span>
                     <div className="text-right">
-                      <span className="font-bold">Your Location</span>
-                      <span className="block text-[11px] font-normal text-gray-500 mt-0.5 leading-tight">(Mobile Service - I come to you)</span>
+                      <span className="font-bold">Eccles, Salford</span>
+                      <span className="block text-[11px] font-normal text-gray-500 mt-0.5 leading-tight">M30 7PL</span>
                     </div>
                   </div>
 
@@ -535,10 +538,12 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                     <span className="font-bold">£{basePrice.toFixed(2)}</span>
                   </div>
 
-                  <div className="flex justify-between border-b border-black/5 pb-2">
-                    <span className="text-gray-500 font-medium font-bold text-money-green">Booking Deposit</span>
-                    <span className="font-bold text-money-green">£{depositAmount.toFixed(2)}</span>
-                  </div>
+                  {paymentOption === 'deposit' && (
+                    <div className="flex justify-between border-b border-black/5 pb-2">
+                      <span className="text-gray-500 font-medium font-bold text-money-green">Booking Deposit</span>
+                      <span className="font-bold text-money-green">£{depositAmount.toFixed(2)}</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between border-b border-black/5 pb-2">
                     <span className="text-gray-500 font-medium flex items-center gap-1">Processing Fee</span>
@@ -552,16 +557,56 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                       {isLate && <div className="block mt-1"><span className="text-[11px] text-money-green font-bold bg-acid-lime/20 px-2 py-0.5 rounded uppercase tracking-wider">Late Rate Applied</span></div>}
                     </div>
                   </div>
+
+                  {paymentOption === 'deposit' && (
+                    <div className="flex justify-between pt-1 border-t border-black/5 mt-1">
+                      <span className="text-gray-400 font-medium">Remaining (pay on the day)</span>
+                      <span className="font-bold text-gray-400">£{(basePrice - depositAmount).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="text-center bg-black-[0.03] border-2 border-dashed border-black/10 p-6 rounded-2xl">
-                <p className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Total Due Now</p>
-                <p className="text-6xl font-display font-black tracking-tight text-near-black">£{totalNow.toFixed(2)}</p>
-                <p className="text-[11px] text-gray-400 mt-3 italic leading-tight uppercase font-bold tracking-wider">
-                  ⚠️ Note: There is a £10 fee for wait times (over 15 mins upon arrival).
+              {/* Payment Option Toggle */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentOption('deposit')}
+                  className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    paymentOption === 'deposit'
+                      ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
+                      : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
+                  }`}
+                >
+                  <p className="font-display font-black uppercase text-sm">Deposit</p>
+                  <p className="text-2xl font-display font-black mt-1">£{(depositAmount + processingFee).toFixed(2)}</p>
+                  <p className={`text-[11px] mt-1 ${paymentOption === 'deposit' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Pay the rest on the day</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentOption('full')}
+                  className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    paymentOption === 'full'
+                      ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
+                      : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
+                  }`}
+                >
+                  <p className="font-display font-black uppercase text-sm">Pay in Full</p>
+                  <p className="text-2xl font-display font-black mt-1">£{(basePrice + processingFee).toFixed(2)}</p>
+                  <p className={`text-[11px] mt-1 ${paymentOption === 'full' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Nothing left to pay</p>
+                </button>
+              </div>
+
+              <div className="text-center">
+                <p className="text-[11px] text-gray-400 italic leading-tight uppercase font-bold tracking-wider">
+                  ⚠️ Note: There is a £10 fee for lateness (over 15 mins past your appointment time).
                 </p>
-                <p className="text-sm text-gray-500 mt-2 max-w-[250px] mx-auto leading-tight">Secure your slot with a non-refundable £{depositAmount} deposit (+£{processingFee} fee). The £{depositAmount} is deducted from your final bill.</p>
+                <p className="text-sm text-gray-500 mt-2 max-w-[280px] mx-auto leading-tight">
+                  {paymentOption === 'deposit'
+                    ? `Secure your slot with a non-refundable £${depositAmount} deposit (+£${processingFee} fee). The £${depositAmount} is deducted from your final bill.`
+                    : `Pay the full service price now (+£${processingFee} processing fee). Nothing left to pay on the day.`
+                  }
+                </p>
               </div>
 
               <Button
@@ -601,7 +646,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                   <p><span className="text-gray-500 inline-block w-20">Service:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('service') || formData.service || "Booking"}</span></p>
                   <p><span className="text-gray-500 inline-block w-20">Date:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('date') || formData.date}</span></p>
                   <p><span className="text-gray-500 inline-block w-20">Time:</span> <span className="font-bold">{new URLSearchParams(window.location.search).get('time') || formData.time}</span></p>
-                  <p><span className="text-gray-500 inline-block w-20">Where:</span> <span className="font-bold">Your Provided Address</span></p>
+                  <p><span className="text-gray-500 inline-block w-20">Where:</span> <span className="font-bold">Eccles, Salford · M30 7PL</span></p>
                 </div>
               </div>
 

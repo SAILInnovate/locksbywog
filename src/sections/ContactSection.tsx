@@ -85,7 +85,7 @@ export function ContactSection() {
 
               <div className="flex items-center justify-center gap-3 text-near-black">
                 <MapPinIcon size={20} />
-                <span className="font-display font-bold">Greater Manchester (Mobile Service)</span>
+                <span className="font-display font-bold">Eccles, Salford · M30 7PL</span>
               </div>
 
               <div className="flex items-center justify-center gap-3 text-near-black">

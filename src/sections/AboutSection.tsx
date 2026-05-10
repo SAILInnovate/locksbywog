@@ -105,12 +105,11 @@ export function AboutSection() {
         className="relative z-30 mb-10 md:mb-0 mx-auto md:mx-0 md:absolute md:top-[52vh] md:left-[6vw] md:w-[40vw] max-w-[480px] text-center md:text-left"
       >
         <p className="body-text text-off-white/90 leading-relaxed text-base">
-          I'm Wog—your mobile stylist in Greater Manchester (I travel to you!). I specialize in neat, long-lasting
-          braids and loc styling that protects your hair and keeps you looking fresh.
+          I'm Wog, your loctician based in Eccles, Salford. I do neat, long-lasting
+          braids and loc styles that protect your hair and keep you looking fresh.
         </p>
         <p className="body-text text-off-white/90 leading-relaxed mt-4 text-base">
-          Every style is crafted with care, precision, and a deep understanding of
-          protective styling. Your hair's health is my priority.
+          Every style is done with care and attention. Your hair's health always comes first.
         </p>
         <a
           href="#portfolio"
