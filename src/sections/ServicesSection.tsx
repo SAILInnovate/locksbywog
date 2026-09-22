@@ -104,7 +104,7 @@ export function ServicesSection({ onBookClick }: ServicesSectionProps) {
       >
         <div className="image-frame overflow-hidden">
           <img
-            src="/images/C89B76A9-EF3F-446C-9C48-656D6E35529C_1_102_o.jpeg"
+            src="/images/8D00B2A9-ECC2-486F-A168-F1A03A587A76_1_102_o.jpeg"
             alt="Locs styling"
             className="w-full h-auto object-cover opacity-90"
             style={{ aspectRatio: '4/5' }}

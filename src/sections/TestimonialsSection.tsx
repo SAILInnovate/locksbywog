@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SparkleIcon } from '@/components/Icons';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { IMAGES } from '@/lib/images';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -95,10 +97,12 @@ export function TestimonialsSection() {
         className="relative z-20 mx-auto mb-10 md:mb-0 md:absolute md:left-[6vw] md:top-[18vh] w-[80vw] md:w-[40vw] max-w-[440px]"
       >
         <div className="image-frame overflow-hidden border-near-black">
-          <img
-            src="/images/F0100147-6D85-46E0-869E-030A0181C118.jpeg"
-            alt="Happy client"
-            className="w-full h-auto object-cover opacity-90"
+          <OptimizedImage
+            asset={IMAGES.clientHappy}
+            alt="Happy client with freshly styled braids"
+            sizes="(min-width: 768px) 40vw, 80vw"
+            opacity={0.9}
+            className="w-full h-auto object-cover"
             style={{ aspectRatio: '3/4' }}
           />
         </div>

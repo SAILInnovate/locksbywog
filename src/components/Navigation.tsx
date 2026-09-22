@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { IMAGES } from '@/lib/images';
 
 interface NavigationProps {
   onBookClick: () => void;
@@ -45,9 +47,11 @@ export function Navigation({ onBookClick }: NavigationProps) {
             onClick={() => scrollToSection('hero')}
             className="hover:rotate-[-2deg] hover:scale-105 transition-transform duration-300"
           >
-            <img
-              src="/images/locsbywogggg.png"
+            <OptimizedImage
+              asset={IMAGES.logo}
               alt="LocsByWog Logo"
+              sizes="72px"
+              priority
               className="h-10 md:h-12 w-auto object-contain"
             />
           </button>

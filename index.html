@@ -18,7 +18,9 @@
   <meta property="og:title" content="LocsByWog | Locs That Hit Different" />
   <meta property="og:description"
     content="Salford-based loctician specialising in neat, long-lasting protective styles. Secure your spot now." />
-  <meta property="og:image" content="https://locsbywog.co.uk/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg" />
+  <meta property="og:image" content="https://locsbywog.co.uk/images/og-card.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
@@ -26,11 +28,119 @@
   <meta property="twitter:title" content="LocsByWog | Locs That Hit Different" />
   <meta property="twitter:description"
     content="Salford-based loctician specialising in neat, long-lasting protective styles. Secure your spot now." />
-  <meta property="twitter:image" content="https://locsbywog.co.uk/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg" />
+  <meta property="twitter:image" content="https://locsbywog.co.uk/images/og-card.jpg" />
+
+  <!--
+    This page is rendered entirely by React, so nothing visible can appear until
+    the JS bundle has downloaded and executed. Two things make that wait feel
+    far shorter:
+
+    1. We preload the opener image. React is what requests it, so without this
+       the download could not even start until the bundle had finished running -
+       the two waits were happening one after the other instead of together.
+    2. We preload the logo and paint a static, inline-styled splash immediately.
+       That gives a branded first paint in the first few hundred milliseconds
+       rather than a blank green screen.
+  -->
+  <link rel="preload" as="image" href="/images/opt/logo-256.webp" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="/images/opt/locs-portrait-600.webp"
+    imagesrcset="/images/opt/locs-portrait-600.webp 600w, /images/opt/locs-portrait-1000.webp 1000w"
+    imagesizes="(min-width: 1024px) 28vw, (min-width: 768px) 35vw, (min-width: 640px) 50vw, 80vw"
+    type="image/webp" fetchpriority="high" />
+
+  <!-- Warm up the connections the booking flow will need later. -->
+  <link rel="preconnect" href="https://js.stripe.com" />
+  <link rel="dns-prefetch" href="https://js.stripe.com" />
+  <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+
+  <style>
+    /*
+      Critical inline styles for the splash only. Kept inline and tiny so it
+      needs no extra round trip before first paint.
+    */
+    #boot-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0B6B4F;
+    }
+
+    #boot-splash img {
+      width: 140px;
+      height: auto;
+      animation: splashPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes splashPulse {
+
+      0%,
+      100% {
+        opacity: 0.55;
+        transform: scale(0.97);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /*
+      The splash is dismissed by App once it has mounted, which cross-fades it
+      out over the real content. The delayed failsafe animation is the safety
+      net: if the bundle never executes, the splash still clears itself after
+      8s and cannot leave the page stuck behind an overlay. visibility:hidden
+      also drops it out of hit-testing, not just out of sight.
+    */
+    #boot-splash.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    @keyframes splashFailsafe {
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    #boot-splash {
+      animation: splashFailsafe 0.4s ease 8s forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      #boot-splash img {
+        animation: none;
+      }
+
+      /*
+        The failsafe is kept (as an instant cut rather than a fade) rather than
+        set to `none`. Without it, a reduced-motion visitor whose JS failed
+        would be left staring at the splash with no way past it.
+      */
+      #boot-splash {
+        animation: splashFailsafe 0.01s linear 8s forwards;
+      }
+
+      #boot-splash.is-hidden {
+        transition: none;
+      }
+    }
+  </style>
 </head>
 
 <body>
   <div id="root"></div>
+
+  <div id="boot-splash" aria-hidden="true">
+    <img src="/images/opt/logo-256.webp" alt="" width="256" height="171" />
+  </div>
+
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

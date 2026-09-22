@@ -140,6 +140,93 @@ select:focus-visible {
   }
 }
 
+/* ============================================
+   Image loading
+   ============================================ */
+
+/*
+ * Images fade in once decoded rather than snapping in. Their dimensions come
+ * from the width/height attributes plus the frame's background, so nothing
+ * reflows while the bytes arrive on a slow connection.
+ * prefers-reduced-motion (below) collapses this to an instant reveal.
+ *
+ * The resting opacity is a custom property rather than a fixed 1, so images
+ * that were deliberately styled translucent keep that treatment instead of
+ * being forced fully opaque by the loaded state.
+ */
+.img-fade {
+  opacity: 0;
+  transition: opacity 0.45s ease-out;
+}
+
+.img-fade.is-loaded {
+  opacity: var(--img-opacity, 1);
+}
+
+/* ============================================
+   Booking modal step transition
+   ============================================ */
+
+/*
+ * Applied to every step of the booking flow. This class was referenced five
+ * times in BookingModal but never actually defined anywhere, so steps used to
+ * swap with no transition at all - which made the flow feel abrupt and
+ * unfinished. A short rise-and-fade reads as responsive rather than slow,
+ * which is why the duration stays brief and the travel distance small.
+ */
+@keyframes stepEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animation-fade-in {
+  animation: stepEnter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ============================================
+   Payment feedback
+   ============================================ */
+
+/*
+ * Indeterminate bar shown while the payment session is prepared. It animates
+ * from the first frame, so the button gives feedback on the same frame as the
+ * tap rather than looking frozen during the network round trip.
+ */
+@keyframes payBar {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.pay-progress {
+  position: relative;
+  overflow: hidden;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pay-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  border-radius: 999px;
+  background: #c3ff00;
+  animation: payBar 1.05s ease-in-out infinite;
+}
+
 /* Referral Banner Shimmer */
 @keyframes shimmer {
   0% {

@@ -2,24 +2,33 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { StarIcon } from '@/components/Icons';
 import { Button } from '@/components/ui/button';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { IMAGES, type ImageAsset } from '@/lib/images';
 
 interface PortfolioSectionProps {
   onBookClick: () => void;
 }
+
+/**
+ * Widths below mirror the slide flex-basis on each breakpoint, so the browser
+ * can pick the smallest WebP that still looks sharp instead of always pulling
+ * the largest one.
+ */
+const SLIDE_SIZES = '(min-width: 1024px) 28vw, (min-width: 768px) 35vw, (min-width: 640px) 50vw, 80vw';
 
 export function PortfolioSection({ onBookClick }: PortfolioSectionProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' }, [
     Autoplay({ delay: 3000, stopOnInteraction: true }),
   ]);
 
-  const images = [
-    "/images/55764726-E9FA-4DD5-BE69-6E0EF95080E7.jpeg",
-    "/images/8D00B2A9-ECC2-486F-A168-F1A03A587A76_1_102_o.jpeg",
-    "/images/IMG_1319.JPG",
-    "/images/D41E79E1-2CB9-4DCF-95FC-C84481C152D4_4_5005_c.jpeg",
-    "/images/F0100147-6D85-46E0-869E-030A0181C118.jpeg",
-    "/images/IMG_6897.jpeg",
-    "/images/anotherdisplayimage.png"
+  const slides: { asset: ImageAsset; alt: string }[] = [
+    { asset: IMAGES.locsPortrait, alt: 'Finished locs styled by LocsByWog' },
+    { asset: IMAGES.braidsCloseup, alt: 'Close-up of neat braid parting' },
+    { asset: IMAGES.styleTall, alt: 'Full length protective style' },
+    { asset: IMAGES.styleSoft, alt: 'Braided style detail' },
+    { asset: IMAGES.clientHappy, alt: 'Client with a fresh braid style' },
+    { asset: IMAGES.salonWork, alt: 'Salon work by LocsByWog' },
+    { asset: IMAGES.styleDisplay, alt: 'Protective style finished look' },
   ];
 
   return (
@@ -41,15 +50,18 @@ export function PortfolioSection({ onBookClick }: PortfolioSectionProps) {
 
       <div className="embla w-full pl-6 md:pl-8 lg:pl-16 relative z-20 cursor-grab active:cursor-grabbing" ref={emblaRef}>
         <div className="embla__container flex">
-          {images.map((src, index) => (
-            <div className="embla__slide flex-[0_0_80%] sm:flex-[0_0_50%] md:flex-[0_0_35%] lg:flex-[0_0_28%] pr-4 md:pr-6" key={index}>
-              <div className="image-frame overflow-hidden h-full">
-                <img
-                  src={src}
-                  alt={`Locs by Wog Portfolio ${index + 1}`}
+          {slides.map((slide, index) => (
+            <div className="embla__slide flex-[0_0_80%] sm:flex-[0_0_50%] md:flex-[0_0_35%] lg:flex-[0_0_28%] pr-4 md:pr-6" key={slide.asset.name}>
+              <div className="image-frame overflow-hidden h-full bg-off-white">
+                <OptimizedImage
+                  asset={slide.asset}
+                  alt={slide.alt}
+                  sizes={SLIDE_SIZES}
+                  // Only the first slide is prioritised; everything else lets
+                  // the browser schedule it, which keeps the opener fast.
+                  priority={index === 0}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   style={{ aspectRatio: '4/5' }}
-                  loading={index < 3 ? "eager" : "lazy"}
                 />
               </div>
             </div>

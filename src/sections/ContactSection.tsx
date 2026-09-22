@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { InstagramIcon, MapPinIcon, ClockIcon } from '@/components/Icons';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { IMAGES } from '@/lib/images';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -96,10 +98,12 @@ export function ContactSection() {
 
             {/* Logo */}
             <div className="mt-12 flex justify-center">
-              <img
-                src="/images/locsbywogggg.png"
+              <OptimizedImage
+                asset={IMAGES.logo}
                 alt="LocsByWog Logo"
-                className="w-32 h-auto opacity-80"
+                sizes="128px"
+                opacity={0.8}
+                className="w-32 h-auto"
               />
             </div>
           </div>

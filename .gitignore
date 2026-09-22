@@ -1,0 +1,7 @@
+# OS noise
+.DS_Store
+
+# Local tooling caches used by scripts in this repo. Neither is part of the
+# deployed site or needed to build it.
+.npm-cache/
+.chrome-profile/

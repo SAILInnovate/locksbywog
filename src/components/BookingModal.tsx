@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates, supabase } from '@/lib/supabase';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { Check, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Lock } from 'lucide-react';
+import { createBooking, getServices, getBookedSlotsForDate, getBlockedDates } from '@/lib/supabase';
 import type { Service } from '@/lib/supabase';
+import { createCheckoutSession, warmUpCheckout } from '@/lib/checkout';
+import { prefetchStripe } from '@/lib/stripe';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +14,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+// Kept out of the initial bundle: Stripe's React bindings are only needed by
+// visitors who actually reach the payment step.
+const EmbeddedPayment = lazy(() => import('@/components/EmbeddedPayment'));
+
 type Step = 'service' | 'datetime' | 'details' | 'payment' | 'success';
+
+/** Placeholder shown while the Stripe bindings load, so the panel never jumps. */
+function PaymentSkeleton() {
+  return (
+    <div className="space-y-3 p-4" aria-hidden="true">
+      <div className="h-11 rounded-lg bg-black/5 animate-pulse" />
+      <div className="h-11 rounded-lg bg-black/5 animate-pulse" />
+      <div className="h-11 rounded-lg bg-black/5 animate-pulse" />
+      <div className="h-12 rounded-lg bg-black/10 animate-pulse" />
+    </div>
+  );
+}
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -32,6 +50,14 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   const [services, setServices] = useState<Service[]>([]);
   const [bookedSlots, setBookedSlots] = useState<{ start_datetime: string, end_datetime: string }[]>([]);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  /**
+   * Set once the edge function hands back an embedded Checkout Session. While
+   * this is present Stripe's payment form is rendered in place of the pay
+   * button, and the customer never leaves the page.
+   */
+  const [embeddedSecret, setEmbeddedSecret] = useState<string | null>(null);
+  /** True while the browser is navigating away to Stripe's hosted page. */
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -93,7 +119,19 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     loadBlockedDates();
   }, [isOpen]);
 
-  const handleDepositPayment = async () => {
+  // Warm up both the edge function container and Stripe.js as soon as the
+  // customer reaches the payment step. Reviewing the summary and choosing
+  // between deposit and full payment takes a few seconds, which is usually
+  // enough to absorb a cold start - so the actual tap on pay is fast.
+  useEffect(() => {
+    if (isOpen && step === 'payment') {
+      warmUpCheckout();
+      prefetchStripe();
+    }
+  }, [isOpen, step]);
+
+  const handleStartPayment = async () => {
+    if (isSubmitting || isRedirecting || embeddedSecret) return;
     setIsSubmitting(true);
 
     const selectedServiceDetails = services.find(s => s.name === formData.service);
@@ -105,17 +143,6 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
 
     const startDateTime = new Date(`${formData.date}T${formData.time}:00`);
     const endDateTime = new Date(startDateTime.getTime() + selectedServiceDetails.duration_minutes * 60000);
-
-    const isLateNightTime = (time: string) => {
-      const hour = parseInt(time.split(':')[0], 10);
-      return hour >= 22 || hour < 5;
-    };
-    const isLate = isLateNightTime(formData.time);
-    const basePrice = isLate ? selectedServiceDetails.price_from * 2 : selectedServiceDetails.price_from;
-    const isPayingFull = paymentOption === 'full';
-    const depositAmount = isPayingFull ? basePrice : 10;
-    const processingFee = 1;
-    const totalNow = isPayingFull ? basePrice + processingFee : depositAmount + processingFee;
 
     // Create booking
     const { data: bData, error } = await createBooking({
@@ -157,37 +184,19 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         total_price: totalNow.toString()
       }).toString();
 
-      const checkoutBody = isPayingFull
-        ? {
-            booking_id: bookingId,
-            name: formData.name,
-            email: formData.email,
-            service_name: selectedServiceDetails.name,
-            total_price: basePrice + processingFee,
-            return_url: `${window.location.origin}?${successParams}`
-          }
-        : {
-            booking_id: bookingId,
-            name: formData.name,
-            email: formData.email,
-            service_name: selectedServiceDetails.name,
-            deposit_amount: depositAmount,
-            processing_fee: processingFee,
-            return_url: `${window.location.origin}?${successParams}`
-          };
-
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('stripe-checkout', {
-        body: checkoutBody
+      const session = await createCheckoutSession({
+        bookingId,
+        name: formData.name,
+        email: formData.email,
+        serviceName: selectedServiceDetails.name,
+        paymentOption,
+        totalPrice: basePrice,
+        depositAmount,
+        processingFee,
+        returnUrl: `${window.location.origin}?${successParams}`,
       });
 
-      if (functionError || !functionData?.url) {
-        console.error('Checkout error:', functionError || functionData);
-        alert('Could not initiate payment. Please contact us or try again later.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Save successful booking intent to local storage so user sees a reminder later
+      // Save successful booking intent so the customer sees a reminder later.
       localStorage.setItem('locsbywog_booking', JSON.stringify({
         service: selectedServiceDetails.name,
         date: formData.date,
@@ -195,13 +204,30 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
         total_price: totalNow
       }));
 
-      // Redirect to Stripe checkout url generated
-      window.location.href = functionData.url;
+      if (session.mode === 'embedded') {
+        // Stripe's form takes over from here, inside the modal.
+        setEmbeddedSecret(session.clientSecret);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Hosted fallback: the function we called does not support embedded
+      // checkout, so hand over to Stripe's own page as before.
+      setIsRedirecting(true);
+      window.location.assign(session.url);
     } catch (err) {
-      console.error('Network error during checkout:', err);
-      alert('Payment initialization failed. Please try again.');
+      console.error('Checkout error:', err);
+      alert('Could not initiate payment. Please contact us or try again later.');
       setIsSubmitting(false);
+      setIsRedirecting(false);
     }
+  };
+
+  /** Stripe has taken the payment: confirm inline, with no page reload. */
+  const handleEmbeddedComplete = () => {
+    setEmbeddedSecret(null);
+    setIsSubmitting(false);
+    setStep('success');
   };
 
   const resetForm = () => {
@@ -218,6 +244,8 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
     });
     setStep('service');
     setIsSubmitting(false);
+    setEmbeddedSecret(null);
+    setIsRedirecting(false);
   };
 
   const handleClose = () => {
@@ -226,6 +254,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
   };
 
   const handleBack = () => {
+    if (embeddedSecret) return; // payment already in progress; keep the session
     if (step === 'datetime') setStep('service');
     else if (step === 'details') setStep('datetime');
     else if (step === 'payment') setStep('details');
@@ -280,7 +309,7 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
       <DialogContent aria-describedby={undefined} className="bg-off-white text-near-black border-2 border-near-black max-w-lg max-h-[90vh] overflow-x-hidden overflow-y-auto w-[95vw] sm:w-[90vw] rounded-2xl p-5 sm:p-6 !box-border">
 
         <DialogHeader className="relative pb-4">
-          {step !== 'service' && step !== 'success' && (
+          {step !== 'service' && step !== 'success' && !embeddedSecret && !isRedirecting && (
             <button
               onClick={handleBack}
               className="absolute left-0 top-1/2 -translate-y-1/2 -mt-2 p-1.5 hover:bg-black/5 rounded-full transition-colors shrink-0 z-10"
@@ -567,35 +596,38 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 </div>
               </div>
 
-              {/* Payment Option Toggle */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentOption('deposit')}
-                  className={`p-4 rounded-xl border-2 text-center transition-all ${
-                    paymentOption === 'deposit'
-                      ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
-                      : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
-                  }`}
-                >
-                  <p className="font-display font-black uppercase text-sm">Deposit</p>
-                  <p className="text-2xl font-display font-black mt-1">£{(depositAmount + processingFee).toFixed(2)}</p>
-                  <p className={`text-[11px] mt-1 ${paymentOption === 'deposit' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Pay the rest on the day</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentOption('full')}
-                  className={`p-4 rounded-xl border-2 text-center transition-all ${
-                    paymentOption === 'full'
-                      ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
-                      : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
-                  }`}
-                >
-                  <p className="font-display font-black uppercase text-sm">Pay in Full</p>
-                  <p className="text-2xl font-display font-black mt-1">£{(basePrice + processingFee).toFixed(2)}</p>
-                  <p className={`text-[11px] mt-1 ${paymentOption === 'full' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Nothing left to pay</p>
-                </button>
-              </div>
+              {/* Payment Option Toggle - hidden once a session is live, since
+                  the amount is already fixed in Stripe at that point. */}
+              {!embeddedSecret && !isRedirecting && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentOption('deposit')}
+                    disabled={isSubmitting}
+                    className={`p-4 rounded-xl border-2 text-center transition-all disabled:opacity-60 ${paymentOption === 'deposit'
+                        ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
+                        : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
+                      }`}
+                  >
+                    <p className="font-display font-black uppercase text-sm">Deposit</p>
+                    <p className="text-2xl font-display font-black mt-1">£{(depositAmount + processingFee).toFixed(2)}</p>
+                    <p className={`text-[11px] mt-1 ${paymentOption === 'deposit' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Pay the rest on the day</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentOption('full')}
+                    disabled={isSubmitting}
+                    className={`p-4 rounded-xl border-2 text-center transition-all disabled:opacity-60 ${paymentOption === 'full'
+                        ? 'border-near-black bg-near-black text-acid-lime shadow-md scale-[1.02]'
+                        : 'border-black/10 bg-white text-gray-700 hover:border-near-black/40'
+                      }`}
+                  >
+                    <p className="font-display font-black uppercase text-sm">Pay in Full</p>
+                    <p className="text-2xl font-display font-black mt-1">£{(basePrice + processingFee).toFixed(2)}</p>
+                    <p className={`text-[11px] mt-1 ${paymentOption === 'full' ? 'text-acid-lime/70' : 'text-gray-400'}`}>Nothing left to pay</p>
+                  </button>
+                </div>
+              )}
 
               <div className="text-center">
                 <p className="text-[11px] text-gray-400 italic leading-tight uppercase font-bold tracking-wider">
@@ -609,20 +641,56 @@ export function BookingModal({ isOpen, onClose, preselectedService }: BookingMod
                 </p>
               </div>
 
-              <Button
-                onClick={handleDepositPayment}
-                disabled={isSubmitting}
-                className="w-full bg-near-black text-acid-lime border-2 border-near-black font-display font-black uppercase py-8 text-xl hover:bg-near-black/90 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#c3ff00] hover:shadow-[2px_2px_0px_#c3ff00]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  'Pay & Finish'
-                )}
-              </Button>
+              {embeddedSecret ? (
+                /*
+                 * Embedded checkout: Stripe renders its payment form right
+                 * here, so the customer stays on the site the whole way
+                 * through. On completion we move straight to the success step
+                 * with no navigation and no second bundle load.
+                 */
+                <div className="rounded-2xl border-2 border-black/10 bg-white overflow-hidden">
+                  <div className="flex items-center justify-center gap-2 py-2.5 border-b border-black/5 bg-money-green/5">
+                    <Lock size={13} className="text-money-green" />
+                    <p className="text-[11px] font-display font-bold uppercase tracking-wider text-money-green">
+                      Secure payment by Stripe
+                    </p>
+                  </div>
+                  <Suspense fallback={<PaymentSkeleton />}>
+                    <EmbeddedPayment
+                      clientSecret={embeddedSecret}
+                      onComplete={handleEmbeddedComplete}
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleStartPayment}
+                    disabled={isSubmitting || isRedirecting}
+                    className="w-full bg-near-black text-acid-lime border-2 border-near-black font-display font-black uppercase py-8 text-xl hover:bg-near-black/90 hover:scale-[1.02] active:scale-95 transition-all shadow-[4px_4px_0px_#c3ff00] hover:shadow-[2px_2px_0px_#c3ff00] disabled:hover:scale-100"
+                  >
+                    {isSubmitting || isRedirecting ? (
+                      <>
+                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                        {isRedirecting ? 'Opening secure payment…' : 'Preparing payment…'}
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-2 h-5 w-5" />
+                        Pay &amp; Finish
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Immediate feedback so the button never looks frozen while
+                      the booking and payment session are being created. */}
+                  {(isSubmitting || isRedirecting) && (
+                    <div className="pay-progress mt-3" role="status" aria-live="polite">
+                      <span className="sr-only">Preparing secure payment</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

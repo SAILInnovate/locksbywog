@@ -1,0 +1,26 @@
+# Netlify custom headers.
+#
+# Without this file Netlify serves every static asset with
+#   cache-control: public,max-age=0,must-revalidate
+# which forces the browser to revalidate each image and script on every single
+# page load. These paths contain only content-addressed or version-suffixed
+# filenames, so they are safe to cache permanently.
+#
+# Note: rules below intentionally do not overlap. If you add a rule, keep the
+# path patterns disjoint rather than relying on rule precedence.
+
+# Hashed build output from Vite (index-<hash>.js / .css).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Generated WebP image derivatives. Filenames include their width, and new
+# photography should be added under a new name so this stays immutable-safe.
+/images/opt/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Baseline hardening. No CSP or frame rules here on purpose: Stripe Embedded
+# Checkout renders in an iframe and a careless frame-ancestors directive would
+# break payments.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
