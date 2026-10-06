@@ -5,16 +5,34 @@ import './App.css';
 
 // Components
 import { Navigation } from '@/components/Navigation';
+import { BookingsPaused } from '@/components/BookingsPaused';
+import { BOOKINGS_ENABLED } from '@/lib/features';
 
 /*
  * The booking modal (and with it Radix's dialog machinery) is split out of the
  * main bundle. It is prefetched during idle time below, so by the time a
  * visitor taps "Book now" the chunk is already in cache and the modal opens
  * without a wait.
+ *
+ * While bookings are switched off this chunk is never requested at all, which
+ * is what guarantees none of the booking or payment code can run.
  */
 const BookingModal = lazy(() =>
   import('@/components/BookingModal').then((m) => ({ default: m.BookingModal }))
 );
+
+/**
+ * True when the visitor has just returned from paying.
+ *
+ * Handled separately from BOOKINGS_ENABLED because anyone who was mid-payment
+ * when bookings were paused still needs to see their confirmation, not a
+ * "bookings are paused" panel.
+ */
+const cameBackFromPayment =
+  new URLSearchParams(window.location.search).get('booking_success') === 'true';
+
+/** With bookings off, the modal gives way to the DM panel. */
+const showPausedPanel = !BOOKINGS_ENABLED && !cameBackFromPayment;
 
 // Sections
 import { PortfolioSection } from '@/sections/PortfolioSection';
@@ -49,10 +67,7 @@ function BookingModalFallback({ isOpen }: { isOpen: boolean }) {
 }
 
 function App() {
-  const [isBookingOpen, setIsBookingOpen] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('booking_success') === 'true';
-  });
+  const [isBookingOpen, setIsBookingOpen] = useState(cameBackFromPayment);
   const [preselectedService, setPreselectedService] = useState('');
   const [existingBooking, setExistingBooking] = useState<{ service: string, date: string, time: string, total_price: number } | null>(null);
 
@@ -92,6 +107,10 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Nothing to prefetch while bookings are off: the modal chunk is not part
+    // of the flow at all, so downloading it would be wasted bandwidth.
+    if (showPausedPanel) return;
+
     // Fetch the booking modal chunk once the browser is idle. It is the one
     // part of the flow a visitor cannot reach without a deliberate tap, so
     // there is no reason to make the first paint wait for it - but it should
@@ -130,14 +149,21 @@ function App() {
         <ContactSection />
       </main>
 
-      {/* Booking Modal */}
-      <Suspense fallback={<BookingModalFallback isOpen={isBookingOpen} />}>
-        <BookingModal
+      {/* Booking Modal - replaced by the DM panel while bookings are off */}
+      {showPausedPanel ? (
+        <BookingsPaused
           isOpen={isBookingOpen}
           onClose={() => setIsBookingOpen(false)}
-          preselectedService={preselectedService}
         />
-      </Suspense>
+      ) : (
+        <Suspense fallback={<BookingModalFallback isOpen={isBookingOpen} />}>
+          <BookingModal
+            isOpen={isBookingOpen}
+            onClose={() => setIsBookingOpen(false)}
+            preselectedService={preselectedService}
+          />
+        </Suspense>
+      )}
 
       {/* Return Customer Booking Reminder */}
       {existingBooking && (
